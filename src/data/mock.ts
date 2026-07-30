@@ -39,6 +39,27 @@ export interface Goal {
   targetMinor: number;
   savedMinor: number;
   deadline: string;
+  /** ile realnie odkładasz miesięcznie (grosze) */
+  monthlyContribMinor: number;
+  /** 1 = cel główny, wyżej = dalszy priorytet */
+  priority: number;
+}
+
+export interface Milestone {
+  pct: 25 | 50 | 75 | 100;
+  reward: string;
+  unlocked: boolean;
+}
+
+export interface CutSuggestion {
+  categoryId: CategoryId;
+  icon: string;
+  label: string;
+  /** ile grosze/miesiąc do wycięcia */
+  cutMinor: number;
+  /** o ile tygodni przyspiesza cel */
+  weeksSaved: number;
+  hint: string;
 }
 
 export const categories: Category[] = [
