@@ -245,3 +245,101 @@ export function ScreenGoals() {
     </>
   );
 }
+
+/* ---------- 5. BUDŻET MIESIĘCZNY ---------- */
+export function ScreenBudget() {
+  const budget = categories.reduce((s, c) => s + c.budgetMinor, 0);
+  const spent = categories.reduce((s, c) => s + c.spentMinor, 0);
+  const left = budget - spent;
+  const usedPct = Math.round((spent / budget) * 100);
+  const daysLeft = 2;
+  const overCats = categories.filter((c) => c.spentMinor > c.budgetMinor);
+  const safeCats = categories.filter((c) => c.spentMinor / c.budgetMinor <= 0.75);
+
+  return (
+    <>
+      <StatusBar title="Budżet" />
+      <div className="glow-top flex-1 overflow-hidden px-5 pt-4">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+          Lipiec 2026 · plan miesięczny
+        </p>
+        <div className="mt-1 flex items-end gap-2">
+          <span className="tabular text-[34px] font-semibold leading-none text-foreground">
+            {pln(left)}
+          </span>
+          <span className="pb-1 text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            wolne
+          </span>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Wykorzystano <span className={usedPct > 90 ? "text-coral" : "text-lime"}>{usedPct}%</span>{" "}
+          z {pln(budget)} · zostały {daysLeft} dni.
+        </p>
+
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-2">
+          <div
+            className={`h-full rounded-full ${usedPct > 90 ? "bg-coral" : "bg-lime"}`}
+            style={{ width: `${Math.min(100, usedPct)}%` }}
+          />
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {[
+            { k: "W limicie", v: `${safeCats.length}/${categories.length}`, c: "text-lime" },
+            { k: "Przekroczone", v: String(overCats.length), c: "text-coral" },
+            { k: "Dzienny luz", v: pln(Math.max(0, Math.round(left / daysLeft))), c: "text-cyan" },
+          ].map((s) => (
+            <div key={s.k} className="rounded-xl border border-border bg-surface px-2 py-2.5">
+              <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">{s.k}</p>
+              <p className={`tabular mt-1 text-xs ${s.c}`}>{s.v}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {categories.slice(0, 4).map((c) => {
+            const pct = Math.round((c.spentMinor / c.budgetMinor) * 100);
+            const over = c.spentMinor > c.budgetMinor;
+            return (
+              <div key={c.id} className="flex items-center gap-3">
+                <span className="text-sm">{c.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-foreground">{c.label}</span>
+                    <span className={`tabular ${over ? "text-coral" : toneClass[c.tone]}`}>
+                      {over ? `+${pln(c.spentMinor - c.budgetMinor)}` : pln(c.budgetMinor - c.spentMinor)}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-surface-2">
+                    <div
+                      className={`h-full rounded-full ${over ? "bg-coral" : toneBg[c.tone]}`}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-lime/30 bg-lime/10 p-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-lime">Zachęta</p>
+          <p className="mt-1.5 text-xs text-foreground">
+            Zejdź z Rozrywką o 60 zł, a domkniesz miesiąc na plusie — to{" "}
+            <span className="text-lime">+1 tydzień</span> szybciej w Bieszczadach.
+          </p>
+        </div>
+
+        <div className="mt-2 flex gap-2">
+          <span className="rounded-full border border-cyan/40 bg-cyan/10 px-3 py-1.5 text-[10px] text-cyan">
+            Odłóż resztę → cel
+          </span>
+          <span className="rounded-full border border-border bg-surface px-3 py-1.5 text-[10px] text-muted-foreground">
+            Puls {savingScore}/100 · 🔥 {streakDays} dni
+          </span>
+        </div>
+      </div>
+      <TabBar active="budget" />
+    </>
+  );
+}
