@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { PhoneFrame } from "@/components/mock/PhoneFrame";
 import {
   ScreenAdd,
+  ScreenBudget,
   ScreenCategories,
   ScreenDashboard,
   ScreenGoals,
