@@ -79,6 +79,12 @@ function Index() {
           <PhoneFrame label="Kategorie" caption="Limity miesięczne z sygnałem przekroczenia.">
             <ScreenCategories />
           </PhoneFrame>
+          <PhoneFrame
+            label="Budżet miesięczny"
+            caption="Postęp względem limitów, wolne środki i zachęty do oszczędzania."
+          >
+            <ScreenBudget />
+          </PhoneFrame>
           <PhoneFrame label="Cele" caption="Cele oszczędnościowe i wyzwanie tygodnia.">
             <ScreenGoals />
           </PhoneFrame>
