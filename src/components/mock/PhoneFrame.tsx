@@ -42,6 +42,7 @@ export function TabBar({ active }: { active: string }) {
     { id: "home", label: "Pulpit", icon: "◎" },
     { id: "add", label: "Dodaj", icon: "＋" },
     { id: "cats", label: "Kategorie", icon: "▤" },
+    { id: "budget", label: "Budżet", icon: "◈" },
     { id: "goals", label: "Cele", icon: "◆" },
   ];
   return (
