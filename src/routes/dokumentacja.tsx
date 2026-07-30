@@ -202,7 +202,18 @@ fun monthsToGoal(g: GoalEntity, extraMonthly: Long = 0L): Double {
 // cut = if (spent > budget) spent - budget else round(spent * 0.15)
 // weeksSaved = ((monthsToGoal(g) - monthsToGoal(g, cut)) * 4.345).roundToInt().coerceAtLeast(1)
 // sortuj malejąco po cut; akcja "Zastosuj" obniża monthlyBudgetMinor kategorii o cut
-// i podnosi monthlyContribMinor celu o tę samą kwotę.`}</Code>
+// i podnosi monthlyContribMinor celu o tę samą kwotę.
+
+// --- SZCZEGÓŁY CELU: prognoza z historii wpłat ---
+// realne tempo = suma wpłat z ostatnich N miesięcy / N (domyślnie N = 2)
+fun actualMonthlyRate(items: List<ContributionEntity>, months: Int = 2): Long =
+    if (items.isEmpty()) 0L else items.sumOf { it.amountMinor } / months
+
+// ETA z historii = monthsToGoal(g.copy(monthlyContribMinor = actualMonthlyRate(...)))
+// drift = realneTempo - plan; drift > 0 → limonka "przyspiesza", < 0 → koral "cofa się"
+// Prognozę przelicza się po każdym INSERT do goal_contributions (Flow z Room).
+// Wypłata z celu = ujemny amountMinor; nie kasuje odblokowanych mikro-nagród.`}</Code>
+
         <p>
           Przytyk kontekstowy przy dodawaniu: jeśli w bieżącym tygodniu są ≥3 wydatki tej samej
           kategorii i podkategorii, pokaż kartę z alternatywnym kosztem (np. „gotowanie zostawiłoby
