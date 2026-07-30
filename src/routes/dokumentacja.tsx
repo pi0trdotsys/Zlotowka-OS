@@ -168,6 +168,12 @@ data class ContributionEntity(
             postępu i prognozą daty, pas mikro-nagród 25/50/75/100%, lista sugestii „co zmniejszyć”,
             wszystkie cele, wyzwanie tygodnia i szybkie dorzucenia (10/20/50 zł).
           </li>
+          <li>
+            <strong className="text-foreground">Szczegóły celu</strong>: karta prognozy (realne tempo
+            vs. plan), słupki wpłat miesięcznych, pełna historia wpłat/wypłat ze źródłem i notatką,
+            szybkie dorzucenia.
+          </li>
+
         </ul>
       </Section>
 
