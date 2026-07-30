@@ -116,8 +116,19 @@ data class MilestoneEntity(
     val pct: Int,                    // 25 | 50 | 75 | 100
     val reward: String,              // "Pierwsza ćwiartka", "Półmetek", ...
     val unlockedAt: Long? = null     // null = jeszcze zablokowana
+)
+
+@Entity(tableName = "goal_contributions")
+data class ContributionEntity(
+    @PrimaryKey val id: String,
+    val goalId: String,
+    val amountMinor: Long,           // > 0 wpłata, < 0 wypłata z celu
+    val timestamp: Long,
+    val source: ContributionSource,  // MANUAL, AUTO, ROUNDUP, CHALLENGE, CUT
+    val note: String? = null
 )`}</Code>
       </Section>
+
 
 
       <Section n="03" title="Formatowanie PLN">
