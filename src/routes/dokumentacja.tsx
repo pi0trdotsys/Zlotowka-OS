@@ -153,8 +153,9 @@ data class MilestoneEntity(
             przełącza kolor na koral i pokazuje procent.
           </li>
           <li>
-            <strong className="text-foreground">Cele</strong>: postęp celów + „wyzwanie tygodnia” z 7
-            kropkami.
+            <strong className="text-foreground">Cele</strong>: cel główny (priority = 1) z paskiem
+            postępu i prognozą daty, pas mikro-nagród 25/50/75/100%, lista sugestii „co zmniejszyć”,
+            wszystkie cele, wyzwanie tygodnia i szybkie dorzucenia (10/20/50 zł).
           </li>
         </ul>
       </Section>
@@ -166,13 +167,32 @@ score = 0.4 * budgetAdherence   // % kategorii w limicie
       + 0.3 * streakFactor      // min(streakDays / 30, 1)
 
 // Seria (streak): dzień bez wydatku w kategorii oznaczonej jako "impulsowa"
-// Odznaki: 3 dni "Pierwszy Grosz", 7 "Oszczędny", 14 "Twarda Waluta", 30 "Żelazny Budżet"`}</Code>
+// Odznaki: 3 dni "Pierwszy Grosz", 7 "Oszczędny", 14 "Twarda Waluta", 30 "Żelazny Budżet"
+
+// --- CELE ---
+fun monthsToGoal(g: GoalEntity, extraMonthly: Long = 0L): Double {
+    val rate = g.monthlyContribMinor + extraMonthly
+    if (rate <= 0) return Double.POSITIVE_INFINITY
+    return max(0.0, (g.targetMinor - g.savedMinor).toDouble() / rate)
+}
+
+// ETA: dzisiaj + ceil(monthsToGoal) miesięcy, format "LLL yyyy" (pl-PL)
+
+// Mikro-nagrody: odblokuj próg, gdy savedMinor/targetMinor >= pct/100.
+// Odblokowanie zapisuje unlockedAt i wyzwala notyfikację + animację.
+
+// Sugestie "co zmniejszyć" (top 3):
+// cut = if (spent > budget) spent - budget else round(spent * 0.15)
+// weeksSaved = ((monthsToGoal(g) - monthsToGoal(g, cut)) * 4.345).roundToInt().coerceAtLeast(1)
+// sortuj malejąco po cut; akcja "Zastosuj" obniża monthlyBudgetMinor kategorii o cut
+// i podnosi monthlyContribMinor celu o tę samą kwotę.`}</Code>
         <p>
           Przytyk kontekstowy przy dodawaniu: jeśli w bieżącym tygodniu są ≥3 wydatki tej samej
           kategorii i podkategorii, pokaż kartę z alternatywnym kosztem (np. „gotowanie zostawiłoby
           96 zł”).
         </p>
       </Section>
+
 
       <Section n="06" title="Widget (Glance)">
         <Code>{`class BudgetWidget : GlanceAppWidget() {
