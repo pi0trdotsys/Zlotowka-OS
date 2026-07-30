@@ -104,9 +104,21 @@ data class GoalEntity(
     val label: String,
     val targetMinor: Long,
     val savedMinor: Long,
-    val deadline: Long
+    val deadline: Long,
+    val monthlyContribMinor: Long,   // realne tempo odkładania
+    val priority: Int                // 1 = cel główny
+)
+
+@Entity(tableName = "goal_milestones")
+data class MilestoneEntity(
+    @PrimaryKey val id: String,      // "\${goalId}-25"
+    val goalId: String,
+    val pct: Int,                    // 25 | 50 | 75 | 100
+    val reward: String,              // "Pierwsza ćwiartka", "Półmetek", ...
+    val unlockedAt: Long? = null     // null = jeszcze zablokowana
 )`}</Code>
       </Section>
+
 
       <Section n="03" title="Formatowanie PLN">
         <Code>{`fun Long.toPln(withSign: Boolean = false): String {
