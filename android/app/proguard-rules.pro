@@ -1,0 +1,3 @@
+-keep class pl.nullpointerstudio.zlotowka.data.** { *; }
+-keepattributes *Annotation*
+-keep class androidx.room.** { *; }

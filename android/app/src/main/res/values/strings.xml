@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ZŁOTÓWKA OS</string>
+    <string name="widget_label">Złotówka — Pasek dnia</string>
+    <string name="studio_signature">NullPointer Studio</string>
+    <string name="notif_channel_daily_name">Podsumowanie dnia</string>
+    <string name="notif_channel_daily_desc">Krótkie podsumowanie wydatków na koniec dnia</string>
+    <string name="notif_channel_weekly_name">Raport tygodniowy</string>
+    <string name="notif_channel_weekly_desc">Cotygodniowy raport wydatków z sugestiami</string>
+    <string name="notif_channel_milestone_name">Kamienie milowe i odznaki</string>
+    <string name="notif_channel_milestone_desc">Odblokowania nagród i odznak motywacyjnych</string>
+</resources>

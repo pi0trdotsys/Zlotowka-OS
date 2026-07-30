@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Grosik: coin mascot, kept inside adaptive-icon safe zone (~66dp circle around center) -->
+    <!-- feet -->
+    <path android:fillColor="#8FB93E" android:pathData="M40,80 a5,4 0 1,0 10,0 a5,4 0 1,0 -10,0 Z" />
+    <path android:fillColor="#8FB93E" android:pathData="M58,80 a5,4 0 1,0 10,0 a5,4 0 1,0 -10,0 Z" />
+    <!-- body (coin) -->
+    <path android:fillColor="#C8F751" android:pathData="M54,26 A24,24 0 1,1 53.9,26 Z" />
+    <!-- inner coin rim -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#8FB93E"
+        android:strokeWidth="2"
+        android:pathData="M54,33 A17,17 0 1,1 53.9,33 Z" />
+    <!-- zloty mark -->
+    <path
+        android:fillColor="#14161A"
+        android:pathData="M50,42 L58,42 L52,56 L60,56 L48,66 L52,58 L45,58 Z" />
+    <!-- eyes -->
+    <path android:fillColor="#14161A" android:pathData="M43,46 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z" />
+    <path android:fillColor="#14161A" android:pathData="M59,46 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z" />
+    <!-- antenna -->
+    <path
+        android:strokeColor="#8FB93E"
+        android:strokeWidth="2"
+        android:fillColor="#00000000"
+        android:pathData="M54,26 L54,17" />
+    <path android:fillColor="#6FE3E1" android:pathData="M54,17 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z" />
+</vector>

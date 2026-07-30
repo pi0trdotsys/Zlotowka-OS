@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- static splash mascot: system splash icon must be a plain (non-adaptive) drawable -->
+    <path android:fillColor="#8FB93E" android:pathData="M78,146 a9,7 0 1,0 18,0 a9,7 0 1,0 -18,0 Z" />
+    <path android:fillColor="#8FB93E" android:pathData="M104,146 a9,7 0 1,0 18,0 a9,7 0 1,0 -18,0 Z" />
+    <path android:fillColor="#C8F751" android:pathData="M100,48 A44,44 0 1,1 99.9,48 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#8FB93E"
+        android:strokeWidth="3"
+        android:pathData="M100,61 A31,31 0 1,1 99.9,61 Z" />
+    <path
+        android:fillColor="#14161A"
+        android:pathData="M92,78 L108,78 L96,104 L112,104 L88,124 L96,108 L82,108 Z" />
+    <path android:fillColor="#14161A" android:pathData="M78,86 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+    <path android:fillColor="#14161A" android:pathData="M111,86 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+    <path
+        android:strokeColor="#8FB93E"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M100,48 L100,30" />
+    <path android:fillColor="#6FE3E1" android:pathData="M100,30 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z" />
+</vector>
