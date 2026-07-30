@@ -5,6 +5,7 @@ import {
   ScreenBudget,
   ScreenCategories,
   ScreenDashboard,
+  ScreenGoalDetail,
   ScreenGoals,
 } from "@/components/mock/Screens";
 import { AndroidHome } from "@/components/mock/Widget";
