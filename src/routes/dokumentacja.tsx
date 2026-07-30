@@ -116,8 +116,19 @@ data class MilestoneEntity(
     val pct: Int,                    // 25 | 50 | 75 | 100
     val reward: String,              // "Pierwsza ćwiartka", "Półmetek", ...
     val unlockedAt: Long? = null     // null = jeszcze zablokowana
+)
+
+@Entity(tableName = "goal_contributions")
+data class ContributionEntity(
+    @PrimaryKey val id: String,
+    val goalId: String,
+    val amountMinor: Long,           // > 0 wpłata, < 0 wypłata z celu
+    val timestamp: Long,
+    val source: ContributionSource,  // MANUAL, AUTO, ROUNDUP, CHALLENGE, CUT
+    val note: String? = null
 )`}</Code>
       </Section>
+
 
 
       <Section n="03" title="Formatowanie PLN">
@@ -157,6 +168,12 @@ data class MilestoneEntity(
             postępu i prognozą daty, pas mikro-nagród 25/50/75/100%, lista sugestii „co zmniejszyć”,
             wszystkie cele, wyzwanie tygodnia i szybkie dorzucenia (10/20/50 zł).
           </li>
+          <li>
+            <strong className="text-foreground">Szczegóły celu</strong>: karta prognozy (realne tempo
+            vs. plan), słupki wpłat miesięcznych, pełna historia wpłat/wypłat ze źródłem i notatką,
+            szybkie dorzucenia.
+          </li>
+
         </ul>
       </Section>
 
@@ -185,7 +202,18 @@ fun monthsToGoal(g: GoalEntity, extraMonthly: Long = 0L): Double {
 // cut = if (spent > budget) spent - budget else round(spent * 0.15)
 // weeksSaved = ((monthsToGoal(g) - monthsToGoal(g, cut)) * 4.345).roundToInt().coerceAtLeast(1)
 // sortuj malejąco po cut; akcja "Zastosuj" obniża monthlyBudgetMinor kategorii o cut
-// i podnosi monthlyContribMinor celu o tę samą kwotę.`}</Code>
+// i podnosi monthlyContribMinor celu o tę samą kwotę.
+
+// --- SZCZEGÓŁY CELU: prognoza z historii wpłat ---
+// realne tempo = suma wpłat z ostatnich N miesięcy / N (domyślnie N = 2)
+fun actualMonthlyRate(items: List<ContributionEntity>, months: Int = 2): Long =
+    if (items.isEmpty()) 0L else items.sumOf { it.amountMinor } / months
+
+// ETA z historii = monthsToGoal(g.copy(monthlyContribMinor = actualMonthlyRate(...)))
+// drift = realneTempo - plan; drift > 0 → limonka "przyspiesza", < 0 → koral "cofa się"
+// Prognozę przelicza się po każdym INSERT do goal_contributions (Flow z Room).
+// Wypłata z celu = ujemny amountMinor; nie kasuje odblokowanych mikro-nagród.`}</Code>
+
         <p>
           Przytyk kontekstowy przy dodawaniu: jeśli w bieżącym tygodniu są ≥3 wydatki tej samej
           kategorii i podkategorii, pokaż kartę z alternatywnym kosztem (np. „gotowanie zostawiłoby

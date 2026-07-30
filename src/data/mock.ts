@@ -196,3 +196,66 @@ export function suggestionsForGoal(g: Goal, limit = 3): CutSuggestion[] {
 
 /** Szybkie dorzucenia do celu (grosze). */
 export const quickTopUps = [1000, 2000, 5000];
+
+/* ---------- HISTORIA WPŁAT NA CEL ---------- */
+
+export interface Contribution {
+  id: string;
+  goalId: string;
+  /** grosze; dodatnia = wpłata, ujemna = wypłata z celu */
+  amountMinor: number;
+  date: string; // ISO
+  source: "Ręcznie" | "Auto" | "Zaokrąglenie" | "Wyzwanie" | "Cięcie";
+  note?: string;
+}
+
+export const contributions: Contribution[] = [
+  { id: "c1", goalId: "g2", amountMinor: 18000, date: "2026-07-28T09:05:00", source: "Auto", note: "Stałe zlecenie po wypłacie" },
+  { id: "c2", goalId: "g2", amountMinor: 4500, date: "2026-07-24T20:31:00", source: "Wyzwanie", note: "Tydzień bez dowozu" },
+  { id: "c3", goalId: "g2", amountMinor: 1230, date: "2026-07-21T11:48:00", source: "Zaokrąglenie", note: "Reszty z 14 transakcji" },
+  { id: "c4", goalId: "g2", amountMinor: -6000, date: "2026-07-16T17:02:00", source: "Ręcznie", note: "Wypłata na serwis roweru" },
+  { id: "c5", goalId: "g2", amountMinor: 9000, date: "2026-07-10T08:15:00", source: "Cięcie", note: "Rozrywka −90 zł" },
+  { id: "c6", goalId: "g2", amountMinor: 18000, date: "2026-06-28T09:04:00", source: "Auto", note: "Stałe zlecenie po wypłacie" },
+  { id: "c7", goalId: "g1", amountMinor: 30000, date: "2026-07-28T09:05:00", source: "Auto", note: "Stałe zlecenie po wypłacie" },
+  { id: "c8", goalId: "g1", amountMinor: 7500, date: "2026-07-12T13:20:00", source: "Ręcznie" },
+];
+
+export function contributionsFor(goalId: string): Contribution[] {
+  return contributions
+    .filter((c) => c.goalId === goalId)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+/** Średnie realne tempo z ostatnich `months` miesięcy (grosze/mies.). */
+export function actualMonthlyRate(goalId: string, months = 2): number {
+  const list = contributionsFor(goalId);
+  if (list.length === 0) return 0;
+  const sum = list.reduce((s, c) => s + c.amountMinor, 0);
+  return Math.round(sum / months);
+}
+
+/** Prognoza oparta na realnym tempie wpłat, a nie na deklarowanym. */
+export function goalEtaFromHistory(g: Goal): { eta: string; rateMinor: number; drift: number } {
+  const rate = actualMonthlyRate(g.id);
+  const declared = g.monthlyContribMinor;
+  const eta =
+    rate > 0
+      ? goalEta({ ...g, monthlyContribMinor: rate })
+      : "—";
+  return { eta, rateMinor: rate, drift: rate - declared };
+}
+
+/** Miesięczne sumy wpłat — do mini-wykresu w szczegółach celu. */
+export function monthlyContribSeries(goalId: string): { label: string; totalMinor: number }[] {
+  const buckets = new Map<string, number>();
+  for (const c of contributionsFor(goalId)) {
+    const key = c.date.slice(0, 7);
+    buckets.set(key, (buckets.get(key) ?? 0) + c.amountMinor);
+  }
+  return [...buckets.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([key, totalMinor]) => ({
+      label: new Intl.DateTimeFormat("pl-PL", { month: "short" }).format(new Date(`${key}-01`)),
+      totalMinor,
+    }));
+}

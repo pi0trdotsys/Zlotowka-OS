@@ -1,9 +1,12 @@
 import {
   categories,
+  contributionsFor,
   goalEta,
+  goalEtaFromHistory,
   goalPct,
   goals,
   milestonesFor,
+  monthlyContribSeries,
   pln,
   quickTopUps,
   savingScore,
@@ -444,6 +447,113 @@ export function ScreenBudget() {
         </div>
       </div>
       <TabBar active="budget" />
+    </>
+  );
+}
+
+/* ---------- 6. SZCZEGÓŁY CELU ---------- */
+export function ScreenGoalDetail() {
+  const goal = [...goals].sort((a, b) => a.priority - b.priority)[0];
+  const pct = goalPct(goal);
+  const history = contributionsFor(goal.id);
+  const series = monthlyContribSeries(goal.id);
+  const maxSeries = Math.max(1, ...series.map((s) => Math.abs(s.totalMinor)));
+  const { eta, rateMinor, drift } = goalEtaFromHistory(goal);
+  const declaredEta = goalEta(goal);
+  const faster = drift > 0;
+
+  return (
+    <>
+      <StatusBar title="Szczegóły celu" />
+      <div className="glow-top flex-1 overflow-y-auto px-5 pb-4 pt-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm text-foreground">{goal.label}</span>
+          <span className="tabular text-xs text-lime">{pct}%</span>
+        </div>
+        <p className="tabular mt-2 text-[30px] font-semibold leading-none text-lime">
+          {pln(goal.savedMinor)}
+        </p>
+        <p className="tabular mt-1 text-[11px] text-muted-foreground">
+          z {pln(goal.targetMinor)} · termin {goal.deadline}
+        </p>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full rounded-full bg-lime" style={{ width: `${pct}%` }} />
+        </div>
+
+        {/* prognoza */}
+        <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            Prognoza ukończenia
+          </p>
+          <p className="tabular mt-1.5 text-lg text-foreground">{eta}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Realne tempo <span className="tabular text-foreground">{pln(rateMinor)}/mies.</span> ·
+            plan {pln(goal.monthlyContribMinor)} ({declaredEta})
+          </p>
+          <p className={`mt-2 text-[11px] ${faster ? "text-lime" : "text-coral"}`}>
+            {faster
+              ? `Wpłacasz o ${pln(drift)} więcej niż zakładałeś — prognoza przyspiesza.`
+              : `Wpłacasz o ${pln(Math.abs(drift))} mniej niż plan — prognoza się cofa.`}
+          </p>
+        </div>
+
+        {/* wykres miesięczny */}
+        <p className="mt-5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Wpłaty miesięcznie
+        </p>
+        <div className="mt-2 flex h-20 items-end gap-2">
+          {series.map((s) => (
+            <div key={s.label} className="flex flex-1 flex-col items-center gap-1.5">
+              <div
+                className={`w-full rounded-t-md ${s.totalMinor < 0 ? "bg-coral" : "bg-lime"}`}
+                style={{ height: `${(Math.abs(s.totalMinor) / maxSeries) * 56}px` }}
+              />
+              <span className="tabular text-[9px] text-muted-foreground">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* historia */}
+        <p className="mt-5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Historia wpłat
+        </p>
+        <div className="mt-2 space-y-2">
+          {history.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
+            >
+              <span className="text-base">{c.amountMinor < 0 ? "↩" : "↑"}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs text-foreground">{c.note ?? c.source}</p>
+                <p className="tabular text-[10px] text-muted-foreground">
+                  {c.date.slice(0, 10)} · {c.source}
+                </p>
+              </div>
+              <span
+                className={`tabular text-xs ${c.amountMinor < 0 ? "text-coral" : "text-lime"}`}
+              >
+                {pln(c.amountMinor, { sign: true })}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Dorzuć
+          </span>
+          {quickTopUps.map((v) => (
+            <span
+              key={v}
+              className="tabular rounded-full border border-lime/40 bg-lime/10 px-3 py-1.5 text-[11px] text-lime"
+            >
+              +{pln(v)}
+            </span>
+          ))}
+        </div>
+      </div>
+      <TabBar active="goals" />
     </>
   );
 }
