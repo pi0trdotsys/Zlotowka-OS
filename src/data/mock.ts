@@ -81,8 +81,8 @@ export const transactions: Tx[] = [
 ];
 
 export const goals: Goal[] = [
-  { id: "g1", label: "Poduszka bezpieczeństwa", targetMinor: 1500000, savedMinor: 962000, deadline: "2026-12-31" },
-  { id: "g2", label: "Wyjazd w Bieszczady", targetMinor: 350000, savedMinor: 128000, deadline: "2026-09-15" },
+  { id: "g1", label: "Poduszka bezpieczeństwa", targetMinor: 1500000, savedMinor: 962000, deadline: "2026-12-31", monthlyContribMinor: 90000, priority: 2 },
+  { id: "g2", label: "Wyjazd w Bieszczady", targetMinor: 350000, savedMinor: 128000, deadline: "2026-09-15", monthlyContribMinor: 55000, priority: 1 },
 ];
 
 export const weeklySpend = [
