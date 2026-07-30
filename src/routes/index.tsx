@@ -92,6 +92,12 @@ function Index() {
           >
             <ScreenGoals />
           </PhoneFrame>
+          <PhoneFrame
+            label="Szczegóły celu"
+            caption="Historia wpłat, tempo miesięczne i prognoza daty aktualizowana na podstawie realnych wpłat."
+          >
+            <ScreenGoalDetail />
+          </PhoneFrame>
         </div>
       </section>
 
