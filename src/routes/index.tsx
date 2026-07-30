@@ -85,7 +85,10 @@ function Index() {
           >
             <ScreenBudget />
           </PhoneFrame>
-          <PhoneFrame label="Cele" caption="Cele oszczędnościowe i wyzwanie tygodnia.">
+          <PhoneFrame
+            label="Cele"
+            caption="Postęp celu, mikro-nagrody 25/50/75/100% i sugestie cięć skracające drogę do celu."
+          >
             <ScreenGoals />
           </PhoneFrame>
         </div>

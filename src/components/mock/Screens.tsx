@@ -1,9 +1,14 @@
 import {
   categories,
+  goalEta,
+  goalPct,
   goals,
+  milestonesFor,
   pln,
+  quickTopUps,
   savingScore,
   streakDays,
+  suggestionsForGoal,
   toneBg,
   toneClass,
   transactions,
@@ -196,18 +201,96 @@ export function ScreenCategories() {
 
 /* ---------- 4. CELE / MOTYWACJA ---------- */
 export function ScreenGoals() {
+  const sorted = [...goals].sort((a, b) => a.priority - b.priority);
+  const main = sorted[0];
+  const mainPct = goalPct(main);
+  const milestones = milestonesFor(main);
+  const suggestions = suggestionsForGoal(main);
+  const best = suggestions[0];
+
   return (
     <>
       <StatusBar title="Cele" />
-      <div className="glow-top flex-1 px-5 pt-4">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          Odłożone łącznie
+      <div className="glow-top flex-1 overflow-y-auto px-5 pt-4 pb-4">
+        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Cel główny</p>
+        <div className="mt-1 flex items-baseline justify-between">
+          <span className="text-sm text-foreground">{main.label}</span>
+          <span className="tabular text-xs text-lime">{mainPct}%</span>
+        </div>
+        <p className="tabular mt-2 text-[32px] font-semibold leading-none text-lime">
+          {pln(main.savedMinor)}
         </p>
-        <p className="tabular mt-1 text-[32px] font-semibold leading-none text-lime">10 900,00 zł</p>
+        <p className="tabular mt-1 text-[11px] text-muted-foreground">
+          z {pln(main.targetMinor)} · brakuje {pln(main.targetMinor - main.savedMinor)}
+        </p>
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-2">
+          <div className="h-full rounded-full bg-lime" style={{ width: `${mainPct}%` }} />
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Przy {pln(main.monthlyContribMinor)}/mies. dojdziesz{" "}
+          <span className="text-lime">{goalEta(main)}</span>.
+        </p>
 
-        <div className="mt-5 space-y-3">
-          {goals.map((g) => {
-            const pct = Math.round((g.savedMinor / g.targetMinor) * 100);
+        {/* mikro-nagrody */}
+        <p className="mt-5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Mikro-nagrody
+        </p>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {milestones.map((m) => (
+            <div
+              key={m.pct}
+              className={`rounded-xl border px-1.5 py-2 text-center ${
+                m.unlocked ? "border-lime/50 bg-lime/10" : "border-border bg-surface"
+              }`}
+            >
+              <div className={`text-sm ${m.unlocked ? "text-lime" : "text-muted-foreground"}`}>
+                {m.unlocked ? "◆" : "◇"}
+              </div>
+              <div className="tabular mt-1 text-[9px] text-muted-foreground">{m.pct}%</div>
+              <div
+                className={`mt-0.5 text-[8px] leading-tight ${
+                  m.unlocked ? "text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {m.reward}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* sugestie cięć */}
+        <p className="mt-5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Co zmniejszyć, by przyspieszyć
+        </p>
+        <div className="mt-2 space-y-2">
+          {suggestions.map((s) => (
+            <div
+              key={s.categoryId}
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2.5"
+            >
+              <span className="text-base">{s.icon}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs text-foreground">
+                  {s.label} <span className="tabular text-coral">−{pln(s.cutMinor)}</span>/mies.
+                </p>
+                <p className="tabular text-[10px] text-muted-foreground">
+                  {s.hint} · szybciej o {s.weeksSaved} tyg.
+                </p>
+              </div>
+              <span className="rounded-full border border-cyan/40 bg-cyan/10 px-2.5 py-1 text-[10px] text-cyan">
+                Zastosuj
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* pozostałe cele */}
+        <p className="mt-5 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+          Wszystkie cele
+        </p>
+        <div className="mt-2 space-y-3">
+          {sorted.map((g) => {
+            const pct = goalPct(g);
             return (
               <div key={g.id} className="rounded-2xl border border-border bg-surface p-4">
                 <div className="flex items-baseline justify-between">
@@ -219,7 +302,7 @@ export function ScreenGoals() {
                 </div>
                 <div className="tabular mt-2 flex justify-between text-[10px] text-muted-foreground">
                   <span>{pln(g.savedMinor)}</span>
-                  <span>z {pln(g.targetMinor)}</span>
+                  <span>z {pln(g.targetMinor)} · {goalEta(g)}</span>
                 </div>
               </div>
             );
@@ -229,7 +312,7 @@ export function ScreenGoals() {
         <div className="mt-5 rounded-2xl border border-cyan/30 bg-cyan/10 p-4">
           <p className="text-[11px] uppercase tracking-[0.2em] text-cyan">Wyzwanie tygodnia</p>
           <p className="mt-2 text-sm text-foreground">
-            Nie zamawiaj jedzenia przez 7 dni → +180 zł do Bieszczad.
+            Nie zamawiaj jedzenia przez 7 dni → +180 zł do {main.label}.
           </p>
           <div className="mt-3 flex gap-1">
             {Array.from({ length: 7 }).map((_, i) => (
@@ -239,6 +322,27 @@ export function ScreenGoals() {
               />
             ))}
           </div>
+        </div>
+
+        {best ? (
+          <p className="mt-4 text-[11px] text-muted-foreground">
+            Tnij {best.label.toLowerCase()} — cel wpada już{" "}
+            <span className="text-lime">{goalEta(main, best.cutMinor)}</span>.
+          </p>
+        ) : null}
+
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            Dorzuć
+          </span>
+          {quickTopUps.map((v) => (
+            <span
+              key={v}
+              className="tabular rounded-full border border-lime/40 bg-lime/10 px-3 py-1.5 text-[11px] text-lime"
+            >
+              +{pln(v)}
+            </span>
+          ))}
         </div>
       </div>
       <TabBar active="goals" />

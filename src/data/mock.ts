@@ -39,6 +39,27 @@ export interface Goal {
   targetMinor: number;
   savedMinor: number;
   deadline: string;
+  /** ile realnie odkładasz miesięcznie (grosze) */
+  monthlyContribMinor: number;
+  /** 1 = cel główny, wyżej = dalszy priorytet */
+  priority: number;
+}
+
+export interface Milestone {
+  pct: 25 | 50 | 75 | 100;
+  reward: string;
+  unlocked: boolean;
+}
+
+export interface CutSuggestion {
+  categoryId: CategoryId;
+  icon: string;
+  label: string;
+  /** ile grosze/miesiąc do wycięcia */
+  cutMinor: number;
+  /** o ile tygodni przyspiesza cel */
+  weeksSaved: number;
+  hint: string;
 }
 
 export const categories: Category[] = [
@@ -60,8 +81,8 @@ export const transactions: Tx[] = [
 ];
 
 export const goals: Goal[] = [
-  { id: "g1", label: "Poduszka bezpieczeństwa", targetMinor: 1500000, savedMinor: 962000, deadline: "2026-12-31" },
-  { id: "g2", label: "Wyjazd w Bieszczady", targetMinor: 350000, savedMinor: 128000, deadline: "2026-09-15" },
+  { id: "g1", label: "Poduszka bezpieczeństwa", targetMinor: 1500000, savedMinor: 962000, deadline: "2026-12-31", monthlyContribMinor: 90000, priority: 2 },
+  { id: "g2", label: "Wyjazd w Bieszczady", targetMinor: 350000, savedMinor: 128000, deadline: "2026-09-15", monthlyContribMinor: 55000, priority: 1 },
 ];
 
 export const weeklySpend = [
@@ -107,3 +128,71 @@ export const toneBg: Record<Category["tone"], string> = {
 /** Wskaźnik motywacyjny: 0–100, im wyżej tym lepiej oszczędzasz. */
 export const savingScore = 78;
 export const streakDays = 12;
+
+/* ---------- CELE: kamienie milowe, prognozy, sugestie ---------- */
+
+const MILESTONE_REWARDS: Record<number, string> = {
+  25: "Pierwsza ćwiartka",
+  50: "Półmetek",
+  75: "Ostatnia prosta",
+  100: "Cel domknięty",
+};
+
+export function goalPct(g: Goal): number {
+  return Math.min(100, Math.round((g.savedMinor / g.targetMinor) * 100));
+}
+
+export function milestonesFor(g: Goal): Milestone[] {
+  const pct = goalPct(g);
+  return ([25, 50, 75, 100] as const).map((p) => ({
+    pct: p,
+    reward: MILESTONE_REWARDS[p],
+    unlocked: pct >= p,
+  }));
+}
+
+/** Ile miesięcy do celu przy obecnym tempie odkładania. */
+export function monthsToGoal(g: Goal, extraMonthlyMinor = 0): number {
+  const rate = g.monthlyContribMinor + extraMonthlyMinor;
+  if (rate <= 0) return Infinity;
+  return Math.max(0, (g.targetMinor - g.savedMinor) / rate);
+}
+
+/** Szacowana data osiągnięcia celu, np. „paź 2026”. */
+export function goalEta(g: Goal, extraMonthlyMinor = 0, from = new Date("2026-07-30")): string {
+  const m = monthsToGoal(g, extraMonthlyMinor);
+  if (!Number.isFinite(m)) return "—";
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + Math.ceil(m));
+  return new Intl.DateTimeFormat("pl-PL", { month: "short", year: "numeric" }).format(d);
+}
+
+/**
+ * Sugestie „co zmniejszyć”: kategorie z największym przekroczeniem / udziałem.
+ * Cięcie = 100% nadwyżki ponad limit, a gdy w limicie — 15% wydatku.
+ */
+export function suggestionsForGoal(g: Goal, limit = 3): CutSuggestion[] {
+  const baseMonths = monthsToGoal(g);
+  return categories
+    .map((c) => {
+      const over = Math.max(0, c.spentMinor - c.budgetMinor);
+      const cutMinor = Math.round((over > 0 ? over : c.spentMinor * 0.15) / 100) * 100;
+      const weeksSaved = Math.max(
+        1,
+        Math.round((baseMonths - monthsToGoal(g, cutMinor)) * 4.345),
+      );
+      return {
+        categoryId: c.id,
+        icon: c.icon,
+        label: c.label,
+        cutMinor,
+        weeksSaved,
+        hint: over > 0 ? `przekroczone o ${pln(over)}` : `−15% miesięcznie`,
+      };
+    })
+    .sort((a, b) => b.cutMinor - a.cutMinor)
+    .slice(0, limit);
+}
+
+/** Szybkie dorzucenia do celu (grosze). */
+export const quickTopUps = [1000, 2000, 5000];
