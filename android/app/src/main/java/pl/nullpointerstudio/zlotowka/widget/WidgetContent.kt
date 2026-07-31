@@ -2,6 +2,8 @@ package pl.nullpointerstudio.zlotowka.widget
 
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
@@ -41,8 +43,9 @@ import pl.nullpointerstudio.zlotowka.ui.theme.Surface2
 import pl.nullpointerstudio.zlotowka.ui.theme.TextMuted
 import pl.nullpointerstudio.zlotowka.ui.theme.TextPrimary
 
-/** Próg szerokości, od którego renderujemy szeroki layout "Pasek dnia" zamiast wąskiego "Puls". */
-private val WIDE_BREAKPOINT = 300.dp
+/** Progi rozmiaru — cztery kubełki: 2x1 / 2x2 / 4x1 / 4x2, każdy z osobnym, maks. funkcjonalnym layoutem. */
+private val WIDE_BREAKPOINT = 180.dp
+private val TALL_BREAKPOINT = 70.dp
 
 private val CardBackground = ColorProvider(Surface)
 private val TrackBackground = ColorProvider(Surface2)
@@ -54,30 +57,30 @@ private val TextMutedProvider = ColorProvider(TextMuted)
 @Composable
 fun WidgetContent(snapshot: MotivationSnapshot) {
     val size = LocalSize.current
+    val isWide = size.width >= WIDE_BREAKPOINT
+    val isTall = size.height >= TALL_BREAKPOINT
+
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(CardBackground)
-            .cornerRadius(24.dp)
-            .padding(14.dp),
+            .cornerRadius(if (isTall) 24.dp else 16.dp)
+            .padding(if (isTall) 14.dp else 8.dp),
     ) {
-        if (size.width >= WIDE_BREAKPOINT) {
-            WideBudgetStrip(snapshot)
-        } else {
-            SmallPulse(snapshot)
+        when {
+            isWide && isTall -> WideBudgetStrip(snapshot)
+            isWide && !isTall -> CompactWideStrip(snapshot)
+            !isWide && isTall -> SmallPulse(snapshot)
+            else -> MinimalBar(snapshot)
         }
     }
 }
 
-/** "Pasek dnia" (4x2) — ile zostało dziś, szybki dodaj wydatek, pasek postępu miesiąca. */
+/** 4x2 — pełny "Pasek dnia": ile zostało dziś, szybki dodaj wydatek, pasek postępu miesiąca, streak. */
 @Composable
 private fun WideBudgetStrip(snapshot: MotivationSnapshot) {
     val context = LocalContext.current
-    val progress = if (snapshot.monthBudgetMinor > 0) {
-        (snapshot.monthSpentMinor.toFloat() / snapshot.monthBudgetMinor.toFloat()).coerceIn(0f, 1f)
-    } else {
-        0f
-    }
+    val progress = monthProgress(snapshot)
 
     Column(modifier = GlanceModifier.fillMaxSize()) {
         Row(
@@ -87,44 +90,15 @@ private fun WideBudgetStrip(snapshot: MotivationSnapshot) {
             Column(modifier = GlanceModifier.defaultWeight()) {
                 Text(
                     text = "DZIŚ ZOSTAŁO",
-                    style = TextStyle(
-                        color = TextMutedProvider,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                    ),
+                    style = TextStyle(color = TextMutedProvider, fontSize = 10.sp, fontWeight = FontWeight.Medium),
                 )
                 Spacer(modifier = GlanceModifier.height(2.dp))
                 Text(
                     text = snapshot.dailyLeftMinor.toPln(),
-                    style = TextStyle(
-                        color = TextPrimaryProvider,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
+                    style = TextStyle(color = TextPrimaryProvider, fontSize = 24.sp, fontWeight = FontWeight.Bold),
                 )
             }
-            Box(
-                modifier = GlanceModifier
-                    .size(30.dp)
-                    .cornerRadius(15.dp)
-                    .background(LimeProvider)
-                    .clickable(
-                        actionStartActivity(
-                            Intent(context, MainActivity::class.java)
-                                .putExtra(Destinations.EXTRA_ROUTE, Destinations.ADD_EXPENSE),
-                        ),
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = "+",
-                    style = TextStyle(
-                        color = OnLimeProvider,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
+            QuickAddButton(context, size = 30.dp, fontSize = 18.sp)
         }
 
         Spacer(modifier = GlanceModifier.height(10.dp))
@@ -146,17 +120,48 @@ private fun WideBudgetStrip(snapshot: MotivationSnapshot) {
             )
             Text(
                 text = "🔥 ${snapshot.streakDays} dni",
-                style = TextStyle(
-                    color = LimeProvider,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                ),
+                style = TextStyle(color = LimeProvider, fontSize = 10.sp, fontWeight = FontWeight.Medium),
             )
         }
     }
 }
 
-/** "Puls" (2x2) — wynik motywacyjny + trzy chipy szybkiego BLIK-a (10/20/50 zł). */
+/** 4x1 — skondensowany pasek dnia w jednej linii: kwota, cienki pasek postępu, szybki dodaj. */
+@Composable
+private fun CompactWideStrip(snapshot: MotivationSnapshot) {
+    val context = LocalContext.current
+    val progress = monthProgress(snapshot)
+
+    Row(
+        modifier = GlanceModifier.fillMaxSize(),
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Row(verticalAlignment = Alignment.Vertical.CenterVertically) {
+                Text(
+                    text = snapshot.dailyLeftMinor.toPln(),
+                    style = TextStyle(color = TextPrimaryProvider, fontSize = 16.sp, fontWeight = FontWeight.Bold),
+                )
+                Spacer(modifier = GlanceModifier.width(6.dp))
+                Text(
+                    text = "dziś",
+                    style = TextStyle(color = TextMutedProvider, fontSize = 9.sp),
+                )
+            }
+            Spacer(modifier = GlanceModifier.height(4.dp))
+            LinearProgressIndicator(
+                modifier = GlanceModifier.fillMaxWidth().height(3.dp),
+                progress = progress,
+                color = LimeProvider,
+                backgroundColor = TrackBackground,
+            )
+        }
+        Spacer(modifier = GlanceModifier.width(8.dp))
+        QuickAddButton(context, size = 24.dp, fontSize = 14.sp)
+    }
+}
+
+/** 2x2 — "Puls": wynik motywacyjny + trzy chipy szybkiego BLIK-a (10/20/50 zł). */
 @Composable
 private fun SmallPulse(snapshot: MotivationSnapshot) {
     Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -170,7 +175,7 @@ private fun SmallPulse(snapshot: MotivationSnapshot) {
             style = TextStyle(color = LimeProvider, fontSize = 30.sp, fontWeight = FontWeight.Bold),
         )
         Text(
-            text = "na 100 pkt",
+            text = "na 100 pkt · 🔥${snapshot.streakDays}",
             style = TextStyle(color = TextMutedProvider, fontSize = 10.sp),
         )
 
@@ -183,6 +188,53 @@ private fun SmallPulse(snapshot: MotivationSnapshot) {
             Spacer(modifier = GlanceModifier.width(6.dp))
             QuickAddChip("50", amountMinor = 5_000L, modifier = GlanceModifier.defaultWeight())
         }
+    }
+}
+
+/** 2x1 — najmniejszy możliwy: sama kwota dnia + mikro-przycisk dodawania. Całość klika w Pulpit. */
+@Composable
+private fun MinimalBar(snapshot: MotivationSnapshot) {
+    val context = LocalContext.current
+    Row(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
+        verticalAlignment = Alignment.Vertical.CenterVertically,
+    ) {
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                text = "DZIŚ",
+                style = TextStyle(color = TextMutedProvider, fontSize = 8.sp, fontWeight = FontWeight.Medium),
+            )
+            Text(
+                text = snapshot.dailyLeftMinor.toPln(),
+                style = TextStyle(color = TextPrimaryProvider, fontSize = 14.sp, fontWeight = FontWeight.Bold),
+                maxLines = 1,
+            )
+        }
+        QuickAddButton(context, size = 20.dp, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun QuickAddButton(context: android.content.Context, size: Dp, fontSize: TextUnit) {
+    Box(
+        modifier = GlanceModifier
+            .size(size)
+            .cornerRadius(size / 2)
+            .background(LimeProvider)
+            .clickable(
+                actionStartActivity(
+                    Intent(context, MainActivity::class.java)
+                        .putExtra(Destinations.EXTRA_ROUTE, Destinations.ADD_EXPENSE),
+                ),
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = "+",
+            style = TextStyle(color = OnLimeProvider, fontSize = fontSize, fontWeight = FontWeight.Bold),
+        )
     }
 }
 
@@ -211,3 +263,10 @@ private fun QuickAddChip(label: String, amountMinor: Long, modifier: GlanceModif
         )
     }
 }
+
+private fun monthProgress(snapshot: MotivationSnapshot): Float =
+    if (snapshot.monthBudgetMinor > 0) {
+        (snapshot.monthSpentMinor.toFloat() / snapshot.monthBudgetMinor.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }

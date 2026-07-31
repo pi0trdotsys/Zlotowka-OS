@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -59,7 +60,7 @@ import java.util.Locale
 import kotlin.math.abs
 
 @Composable
-fun GoalDetailScreen(goalId: String, onBack: () -> Unit) {
+fun GoalDetailScreen(goalId: String, onBack: () -> Unit, onEdit: (String) -> Unit) {
     val context = LocalContext.current
     val app = remember(context) { ZlotowkaApp.from(context) }
     val viewModel: GoalDetailViewModel = viewModel(
@@ -76,6 +77,11 @@ fun GoalDetailScreen(goalId: String, onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Wstecz", tint = TextPrimary)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onEdit(goalId) }) {
+                        Icon(Icons.Filled.Edit, contentDescription = "Edytuj cel", tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

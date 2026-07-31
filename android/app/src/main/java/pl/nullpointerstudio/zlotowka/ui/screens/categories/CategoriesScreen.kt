@@ -1,6 +1,7 @@
 package pl.nullpointerstudio.zlotowka.ui.screens.categories
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -25,11 +27,13 @@ import androidx.lifecycle.viewmodel.initializer
 import pl.nullpointerstudio.zlotowka.ZlotowkaApp
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
 import pl.nullpointerstudio.zlotowka.domain.toPln
+import pl.nullpointerstudio.zlotowka.ui.components.Pill
 import pl.nullpointerstudio.zlotowka.ui.components.ProgressBar
 import pl.nullpointerstudio.zlotowka.ui.components.SectionLabel
 import pl.nullpointerstudio.zlotowka.ui.components.SurfaceCard
 import pl.nullpointerstudio.zlotowka.ui.theme.Coral
 import pl.nullpointerstudio.zlotowka.ui.theme.ColorTone
+import pl.nullpointerstudio.zlotowka.ui.theme.Lime
 import pl.nullpointerstudio.zlotowka.ui.theme.TextMuted
 import pl.nullpointerstudio.zlotowka.ui.theme.TextPrimary
 import pl.nullpointerstudio.zlotowka.ui.theme.toColor
@@ -40,7 +44,7 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 
 @Composable
-fun CategoriesScreen() {
+fun CategoriesScreen(onAddCategory: () -> Unit, onEditCategory: (String) -> Unit) {
     val context = LocalContext.current
     val app = remember(context) { ZlotowkaApp.from(context) }
     val viewModel: CategoriesViewModel = viewModel(
@@ -56,35 +60,59 @@ fun CategoriesScreen() {
             .padding(horizontal = 20.dp)
             .padding(top = 16.dp, bottom = 24.dp),
     ) {
-        SectionLabel(text = "${currentFullMonthYear()} · wydano")
-        Text(
-            text = "${uiState.totalSpentMinor.toPln()}",
-            color = TextPrimary,
-            fontSize = 30.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column {
+                SectionLabel(text = "${currentFullMonthYear()} · wydano")
+                Text(
+                    text = "${uiState.totalSpentMinor.toPln()}",
+                    color = TextPrimary,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            Pill(
+                text = "+ Dodaj kategorię",
+                accent = Lime,
+                filled = true,
+                modifier = Modifier
+                    .padding(top = 4.dp)
+                    .clickable { onAddCategory() },
+            )
+        }
 
         Column(
             modifier = Modifier.padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             uiState.categories.forEach { category ->
-                CategoryRow(category = category, spentMinor = uiState.spentByCategory[category.id] ?: 0L)
+                CategoryRow(
+                    category = category,
+                    spentMinor = uiState.spentByCategory[category.id] ?: 0L,
+                    onClick = { onEditCategory(category.id) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun CategoryRow(category: CategoryEntity, spentMinor: Long) {
+private fun CategoryRow(category: CategoryEntity, spentMinor: Long, onClick: () -> Unit) {
     val budget = category.monthlyBudgetMinor
     val over = budget > 0 && spentMinor > budget
     val pct = if (budget > 0) min(150, ((spentMinor.toDouble() / budget) * 100).roundToInt()) else 0
     val tone = category.colorToken.toColorTone().toColor()
     val amountColor = if (over) Coral else tone
 
-    SurfaceCard(modifier = Modifier.fillMaxWidth()) {
+    SurfaceCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

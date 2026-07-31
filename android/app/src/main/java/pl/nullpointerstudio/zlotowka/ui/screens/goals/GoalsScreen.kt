@@ -39,6 +39,7 @@ import pl.nullpointerstudio.zlotowka.domain.toPln
 import pl.nullpointerstudio.zlotowka.notifications.NotificationChannels
 import pl.nullpointerstudio.zlotowka.ui.components.AmountText
 import pl.nullpointerstudio.zlotowka.ui.components.Pill
+import pl.nullpointerstudio.zlotowka.ui.components.PrimaryPillButton
 import pl.nullpointerstudio.zlotowka.ui.components.ProgressBar
 import pl.nullpointerstudio.zlotowka.ui.components.SectionLabel
 import pl.nullpointerstudio.zlotowka.ui.components.SurfaceCard
@@ -51,7 +52,7 @@ import pl.nullpointerstudio.zlotowka.ui.theme.TextPrimary
 import kotlin.math.min
 
 @Composable
-fun GoalsScreen(onOpenGoal: (String) -> Unit) {
+fun GoalsScreen(onOpenGoal: (String) -> Unit, onAddGoal: () -> Unit) {
     val context = LocalContext.current
     val app = remember(context) { ZlotowkaApp.from(context) }
     val viewModel: GoalsViewModel = viewModel(
@@ -68,6 +69,48 @@ fun GoalsScreen(onOpenGoal: (String) -> Unit) {
             .padding(horizontal = 20.dp)
             .padding(top = 16.dp, bottom = 24.dp),
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = "Cele", color = TextPrimary, fontSize = 18.sp)
+            Pill(
+                text = "+ Dodaj cel",
+                accent = Lime,
+                filled = true,
+                modifier = Modifier.clickable(onClick = onAddGoal),
+            )
+        }
+
+        if (uiState.sortedGoals.isEmpty() && !uiState.loading) {
+            SurfaceCard(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "Nie masz jeszcze żadnego celu oszczędnościowego.",
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                    )
+                    Text(
+                        text = "Dodaj pierwszy cel, żeby zacząć śledzić postęp oszczędzania.",
+                        color = TextMuted,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )
+                    PrimaryPillButton(
+                        text = "Dodaj pierwszy cel",
+                        modifier = Modifier.padding(top = 16.dp),
+                        onClick = onAddGoal,
+                    )
+                }
+            }
+        }
+
         if (mainGoal != null) {
             val pct = goalPct(mainGoal)
             SectionLabel(text = "Cel główny")
@@ -119,13 +162,15 @@ fun GoalsScreen(onOpenGoal: (String) -> Unit) {
             }
         }
 
-        SectionLabel(text = "Wszystkie cele", modifier = Modifier.padding(top = 20.dp))
-        Column(
-            modifier = Modifier.padding(top = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            uiState.sortedGoals.forEach { goal ->
-                GoalSummaryCard(goal = goal, onClick = { onOpenGoal(goal.id) })
+        if (uiState.sortedGoals.isNotEmpty()) {
+            SectionLabel(text = "Wszystkie cele", modifier = Modifier.padding(top = 20.dp))
+            Column(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                uiState.sortedGoals.forEach { goal ->
+                    GoalSummaryCard(goal = goal, onClick = { onOpenGoal(goal.id) })
+                }
             }
         }
 

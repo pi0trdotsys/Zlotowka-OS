@@ -11,17 +11,19 @@ import kotlinx.coroutines.flow.first
 import pl.nullpointerstudio.zlotowka.ZlotowkaApp
 
 /**
- * "Pasek dnia" / "Puls" — widget na ekranie głównym. Responsywny: szeroki layout (4x2) pokazuje
- * dzienny budżet z szybkim dodawaniem wydatku, wąski (2x2) pokazuje Puls oszczędzania z chipami
- * szybkiego BLIK-a. Ten sam [pl.nullpointerstudio.zlotowka.domain.MotivationSnapshot] co Pulpit,
- * żeby liczby się nigdy nie rozjechały.
+ * Widget na ekran główny — skaluje się do 4 rozmiarów (2x1, 2x2, 4x1, 4x2), z osobnym,
+ * maksymalnie funkcjonalnym layoutem dla każdego z nich (patrz [WidgetContent]). Ten sam
+ * [pl.nullpointerstudio.zlotowka.domain.MotivationSnapshot] co Pulpit, żeby liczby się nigdy
+ * nie rozjechały między powierzchniami.
  */
 class BudgetWidget : GlanceAppWidget() {
 
     override val sizeMode: SizeMode = SizeMode.Responsive(
         setOf(
-            DpSize(180.dp, 110.dp),
-            DpSize(330.dp, 110.dp),
+            DpSize(110.dp, 40.dp), // 2x1 — minimalny pasek
+            DpSize(110.dp, 110.dp), // 2x2 — Puls
+            DpSize(250.dp, 40.dp), // 4x1 — skondensowany pasek dnia
+            DpSize(250.dp, 110.dp), // 4x2 — pełny pasek dnia
         ),
     )
 

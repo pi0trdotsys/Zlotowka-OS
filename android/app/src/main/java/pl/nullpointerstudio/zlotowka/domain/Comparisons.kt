@@ -156,6 +156,33 @@ fun weeklySpendSeries(transactions: List<TransactionEntity>, now: Long = System.
     }
 }
 
+/** Filtr widoku Pulpitu: wszystko / tylko wydatki / tylko dochody. */
+enum class TransactionFilter { ALL, EXPENSE, INCOME }
+
+fun TransactionFilter.matches(amountMinor: Long): Boolean = when (this) {
+    TransactionFilter.ALL -> true
+    TransactionFilter.EXPENSE -> amountMinor < 0
+    TransactionFilter.INCOME -> amountMinor > 0
+}
+
+data class DayFlow(val dayLabel: String, val expenseMinor: Long, val incomeMinor: Long, val isToday: Boolean)
+
+/** Wydatki I dochody dzień po dniu za ostatnie 7 dni — dwa słupki obok siebie na Pulpicie. */
+fun weeklyFlowSeries(transactions: List<TransactionEntity>, now: Long = System.currentTimeMillis()): List<DayFlow> {
+    val weekStart = startOfWeek(now)
+    val todayKey = startOfDay(calendarAt(now)).timeInMillis
+    return (0 until 7).map { i ->
+        val dayStart = weekStart + i * MS_PER_DAY
+        val dayEnd = dayStart + MS_PER_DAY
+        DayFlow(
+            dayLabel = PL_DAY_LABELS[i],
+            expenseMinor = sumExpense(transactions, dayStart, dayEnd),
+            incomeMinor = sumIncome(transactions, dayStart, dayEnd),
+            isToday = dayStart == todayKey,
+        )
+    }
+}
+
 data class WeekdayAverage(val dayLabel: String, val averageMinor: Long)
 
 /** Średni wydatek per dzień tygodnia z całej historii — który dzień jest "najdroższy". */
