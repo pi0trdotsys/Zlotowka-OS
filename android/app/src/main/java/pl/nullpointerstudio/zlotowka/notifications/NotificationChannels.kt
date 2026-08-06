@@ -23,11 +23,14 @@ object NotificationChannels {
     const val CHANNEL_DAILY = "daily_summary"
     const val CHANNEL_WEEKLY = "weekly_report"
     const val CHANNEL_MILESTONE = "milestones"
+    const val CHANNEL_MOTIVATION = "motivational_tips"
 
     private const val NOTIF_ID_DAILY = 1001
     private const val NOTIF_ID_WEEKLY = 1002
     private const val NOTIF_ID_MILESTONE_BASE = 2000
     private const val NOTIF_ID_TEST = 999
+    private const val NOTIF_ID_MOTIVATION = 1003
+    private const val NOTIF_ID_LOGGING_REMINDER = 1004
 
     private fun coinSoundUri(context: Context): Uri =
         Uri.parse("android.resource://${context.packageName}/${R.raw.notif_coin}")
@@ -69,7 +72,16 @@ object NotificationChannels {
             setSound(soundUri, attrs)
         }
 
-        manager.createNotificationChannels(listOf(daily, weekly, milestone))
+        val motivation = NotificationChannel(
+            CHANNEL_MOTIVATION,
+            context.getString(R.string.notif_channel_motivation_name),
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = context.getString(R.string.notif_channel_motivation_desc)
+            setSound(soundUri, attrs)
+        }
+
+        manager.createNotificationChannels(listOf(daily, weekly, milestone, motivation))
     }
 
     private fun contentIntent(context: Context, route: String, requestCode: Int): PendingIntent {
@@ -117,6 +129,8 @@ object NotificationChannels {
 
     internal fun dailyNotificationId(): Int = NOTIF_ID_DAILY
     internal fun weeklyNotificationId(): Int = NOTIF_ID_WEEKLY
+    internal fun motivationNotificationId(): Int = NOTIF_ID_MOTIVATION
+    internal fun loggingReminderNotificationId(): Int = NOTIF_ID_LOGGING_REMINDER
 
     internal fun buildContentIntent(context: Context, route: String, requestCode: Int): PendingIntent =
         contentIntent(context, route, requestCode)

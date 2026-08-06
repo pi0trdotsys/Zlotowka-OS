@@ -9,7 +9,7 @@ import pl.nullpointerstudio.zlotowka.ZlotowkaApp
 import pl.nullpointerstudio.zlotowka.data.PaymentMethod
 
 /**
- * Chip "10"/"20"/"50" w widgecie "Puls" — dopisuje szybki wydatek BLIK-iem bez otwierania
+ * Chip "10"/"20"/"50" w widgecie "Puls" — dopisuje szybki wydatek kartą bez otwierania
  * aplikacji, a potem odświeża widget natychmiast, żeby liczby się zgadzały.
  */
 class QuickAddAction : ActionCallback {
@@ -22,10 +22,10 @@ class QuickAddAction : ActionCallback {
         val amount = parameters[AMOUNT_KEY] ?: return
 
         ZlotowkaApp.from(context).repository.addTransaction(
-            title = "Szybki BLIK",
+            title = "Szybki wydatek",
             categoryId = "jedzenie",
             amountMinor = -amount,
-            method = PaymentMethod.BLIK,
+            method = PaymentMethod.CARD,
         )
 
         BudgetWidget().updateAll(context)

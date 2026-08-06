@@ -26,8 +26,8 @@ class ZlotowkaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         val db = AppDatabase.get(this)
-        repository = BudgetRepository(db)
         settingsRepository = SettingsRepository(this)
+        repository = BudgetRepository(db, settingsRepository)
 
         NotificationChannels.ensureCreated(this)
 

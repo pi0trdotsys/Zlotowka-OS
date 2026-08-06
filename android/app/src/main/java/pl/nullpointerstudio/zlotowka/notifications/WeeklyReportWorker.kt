@@ -44,7 +44,16 @@ class WeeklyReportWorker(context: Context, params: WorkerParameters) : Coroutine
             suggestionsForGoal(goal, categories, currentMonthExpenseByCategory(transactions), limit = 1).firstOrNull()
         }
 
+        val snapshot = app.repository.motivationSnapshot.first()
+
         val bodyBuilder = StringBuilder(weekLine)
+        if (snapshot.hasIncomePlan) {
+            bodyBuilder.append('\n')
+            bodyBuilder.append(
+                "Twój plan: ${snapshot.dailyBudgetForRestOfMonthMinor.toPln()}/dzień do wydania po odłożeniu " +
+                    "${snapshot.totalGoalContribMinor.toPln()}/mies. na cele.",
+            )
+        }
         if (suggestion != null) {
             bodyBuilder.append('\n')
             bodyBuilder.append(

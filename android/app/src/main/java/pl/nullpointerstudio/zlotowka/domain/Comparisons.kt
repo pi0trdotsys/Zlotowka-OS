@@ -156,6 +156,13 @@ fun weeklySpendSeries(transactions: List<TransactionEntity>, now: Long = System.
     }
 }
 
+/** Czy dziś zapisano już jakikolwiek wpis (wydatek lub dochód) — do przypomnienia o logowaniu. */
+fun hasLoggedToday(transactions: List<TransactionEntity>, now: Long = System.currentTimeMillis()): Boolean {
+    val todayStart = startOfDay(calendarAt(now)).timeInMillis
+    val todayEnd = todayStart + MS_PER_DAY
+    return transactions.any { it.timestamp in todayStart until todayEnd }
+}
+
 /** Filtr widoku Pulpitu: wszystko / tylko wydatki / tylko dochody. */
 enum class TransactionFilter { ALL, EXPENSE, INCOME }
 

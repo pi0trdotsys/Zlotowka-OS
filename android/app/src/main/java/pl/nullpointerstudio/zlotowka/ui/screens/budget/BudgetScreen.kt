@@ -10,18 +10,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,6 +49,7 @@ import pl.nullpointerstudio.zlotowka.ui.theme.ColorTone
 import pl.nullpointerstudio.zlotowka.ui.theme.Coral
 import pl.nullpointerstudio.zlotowka.ui.theme.Cyan
 import pl.nullpointerstudio.zlotowka.ui.theme.Lime
+import pl.nullpointerstudio.zlotowka.ui.theme.Surface
 import pl.nullpointerstudio.zlotowka.ui.theme.TextMuted
 import pl.nullpointerstudio.zlotowka.ui.theme.TextPrimary
 import pl.nullpointerstudio.zlotowka.ui.theme.toColor
@@ -58,6 +67,40 @@ fun BudgetScreen(onOpenComparisons: () -> Unit) {
     )
     val uiState by viewModel.uiState.collectAsState()
     val snapshot = uiState.snapshot
+    var showIncomeDialog by remember { mutableStateOf(false) }
+    var incomeInput by remember { mutableStateOf("") }
+
+    if (showIncomeDialog) {
+        AlertDialog(
+            onDismissRequest = { showIncomeDialog = false },
+            title = { Text("Szacowane miesięczne zarobki") },
+            text = {
+                OutlinedTextField(
+                    value = incomeInput,
+                    onValueChange = { input -> if (input.count { it == ',' || it == '.' } <= 1) incomeInput = input },
+                    placeholder = { Text("np. 6000") },
+                    suffix = { Text("zł") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Lime,
+                        unfocusedBorderColor = Lime.copy(alpha = 0.4f),
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setEstimatedIncome(parseAmountToMinor(incomeInput))
+                    showIncomeDialog = false
+                }) { Text("Zapisz", color = Lime) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showIncomeDialog = false }) { Text("Anuluj") }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -67,7 +110,41 @@ fun BudgetScreen(onOpenComparisons: () -> Unit) {
             .padding(horizontal = 20.dp)
             .padding(top = 16.dp, bottom = 24.dp),
     ) {
-        SectionLabel(text = "${currentFullMonthYear()} · plan miesięczny")
+        SectionLabel(text = "Twój plan")
+        SurfaceCard(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                if (snapshot != null && snapshot.hasIncomePlan) {
+                    PlanRow(label = "Szacowane zarobki", value = snapshot.estimatedIncomeMinor.toPln())
+                    PlanRow(label = "Odłożysz na cele", value = "${snapshot.totalGoalContribMinor.toPln()}/mies.")
+                    PlanRow(
+                        label = "Do wydania",
+                        value = "${snapshot.dailyBudgetForRestOfMonthMinor.toPln()}/dzień",
+                        valueColor = Lime,
+                    )
+                } else {
+                    Text(
+                        text = "Wpisz szacowane zarobki, żeby zobaczyć ile możesz wydawać dziennie po odłożeniu na cele.",
+                        color = TextMuted,
+                        fontSize = 12.sp,
+                    )
+                }
+                Pill(
+                    text = if (snapshot?.hasIncomePlan == true) "Edytuj zarobki" else "Ustaw zarobki",
+                    accent = Lime,
+                    filled = true,
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .clickable {
+                            incomeInput = ((snapshot?.estimatedIncomeMinor ?: 0L) / 100.0).let {
+                                if (it == 0.0) "" else it.toString().removeSuffix(".0")
+                            }
+                            showIncomeDialog = true
+                        },
+                )
+            }
+        }
+
+        SectionLabel(text = "${currentFullMonthYear()} · plan miesięczny", modifier = Modifier.padding(top = 20.dp))
 
         Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.Bottom) {
             AmountText(minor = snapshot?.monthLeftMinor ?: 0L, fontSize = 34.sp)
@@ -188,6 +265,27 @@ fun BudgetScreen(onOpenComparisons: () -> Unit) {
             Pill(text = "⇄ Porównania", accent = Cyan)
         }
     }
+}
+
+@Composable
+private fun PlanRow(label: String, value: String, valueColor: androidx.compose.ui.graphics.Color = TextPrimary) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = label, color = TextMuted, fontSize = 12.sp)
+        Text(text = value, color = valueColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    }
+}
+
+/** Parsuje wpisaną kwotę ("6000" lub "6000,50") na grosze. Nieprawidłowy wpis => 0. */
+private fun parseAmountToMinor(input: String): Long {
+    val normalized = input.trim().replace(',', '.')
+    if (normalized.isEmpty()) return 0L
+    val value = normalized.toDoubleOrNull() ?: return 0L
+    return Math.round(value * 100)
 }
 
 @Composable

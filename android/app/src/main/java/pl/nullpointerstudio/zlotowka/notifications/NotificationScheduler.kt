@@ -17,10 +17,14 @@ object NotificationScheduler {
 
     private const val DAILY_WORK_NAME = "daily_summary_work"
     private const val WEEKLY_WORK_NAME = "weekly_report_work"
+    private const val MOTIVATION_WORK_NAME = "motivational_tip_work"
+    private const val LOGGING_REMINDER_WORK_NAME = "logging_reminder_work"
 
     private const val DEFAULT_DAILY_HOUR = 21
     private const val DEFAULT_WEEKLY_DAY = Calendar.MONDAY
     private const val DEFAULT_WEEKLY_HOUR = 9
+    private const val DEFAULT_MOTIVATION_HOUR = 10
+    private const val DEFAULT_LOGGING_REMINDER_HOUR = 15
 
     fun scheduleAll(context: Context) {
         val workManager = WorkManager.getInstance(context)
@@ -43,6 +47,26 @@ object NotificationScheduler {
             WEEKLY_WORK_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
             weeklyRequest,
+        )
+
+        val motivationDelayMs = delayUntilNextHour(DEFAULT_MOTIVATION_HOUR)
+        val motivationRequest = PeriodicWorkRequestBuilder<MotivationalTipWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(motivationDelayMs, TimeUnit.MILLISECONDS)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            MOTIVATION_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            motivationRequest,
+        )
+
+        val loggingReminderDelayMs = delayUntilNextHour(DEFAULT_LOGGING_REMINDER_HOUR)
+        val loggingReminderRequest = PeriodicWorkRequestBuilder<LoggingReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(loggingReminderDelayMs, TimeUnit.MILLISECONDS)
+            .build()
+        workManager.enqueueUniquePeriodicWork(
+            LOGGING_REMINDER_WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            loggingReminderRequest,
         )
     }
 

@@ -96,6 +96,13 @@ fun SettingsScreen(onBack: () -> Unit) {
                         },
                     )
                     SettingsToggleRow(
+                        label = "Motywacyjne wskazówki",
+                        checked = settings.motivationalTipsEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch { app.settingsRepository.setMotivationalTipsEnabled(enabled) }
+                        },
+                    )
+                    SettingsToggleRow(
                         label = "Dźwięk powiadomień",
                         checked = settings.soundEnabled,
                         onCheckedChange = { enabled ->

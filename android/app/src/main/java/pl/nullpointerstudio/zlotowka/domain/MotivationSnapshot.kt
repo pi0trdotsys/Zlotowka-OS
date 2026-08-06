@@ -1,6 +1,7 @@
 package pl.nullpointerstudio.zlotowka.domain
 
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
+import pl.nullpointerstudio.zlotowka.data.GoalEntity
 import pl.nullpointerstudio.zlotowka.data.TransactionEntity
 import kotlin.math.max
 import kotlin.math.roundToLong
@@ -8,6 +9,10 @@ import kotlin.math.roundToLong
 /**
  * Jedno miejsce prawdy o stanie motywacyjnym — używane przez Pulpit, widget na ekranie
  * głównym i powiadomienia, żeby liczby nigdy się nie rozjechały między powierzchniami.
+ *
+ * Budżet miesięczny/dzienny liczymy od 2026-08 wg planu: szacowane zarobki minus to, co
+ * chcesz odłożyć na cele (suma `monthlyContribMinor` wszystkich celów) — a nie suma limitów
+ * kategorii (te nadal służą do śledzenia "gdzie idą pieniądze" na ekranach Kategorie/Budżet).
  */
 data class MotivationSnapshot(
     val score: Int,
@@ -20,6 +25,12 @@ data class MotivationSnapshot(
     val dailyBudgetForRestOfMonthMinor: Long,
     val nextBadge: Pair<Badge, Int>?,
     val mascotMood: MascotMood,
+    /** Szacowane miesięczne zarobki wpisane w Ustawieniach/na ekranie Budżet (grosze). */
+    val estimatedIncomeMinor: Long = 0L,
+    /** Suma `monthlyContribMinor` ze wszystkich celów — ile miesięcznie chcesz odłożyć. */
+    val totalGoalContribMinor: Long = 0L,
+    /** true, gdy użytkownik już wpisał szacowane zarobki — inaczej dzienny budżet nie ma sensu. */
+    val hasIncomePlan: Boolean = false,
 )
 
 enum class MascotMood { THRIVING, HAPPY, NEUTRAL, WORRIED, ALARMED }
@@ -35,13 +46,18 @@ fun mascotMoodFor(score: Int): MascotMood = when {
 fun buildMotivationSnapshot(
     categories: List<CategoryEntity>,
     transactions: List<TransactionEntity>,
+    goals: List<GoalEntity> = emptyList(),
+    estimatedIncomeMinor: Long = 0L,
     now: Long = System.currentTimeMillis(),
 ): MotivationSnapshot {
     val impulseIds = categories.filter { it.isImpulse }.map { it.id }.toHashSet()
     val streak = computeStreakDays(transactions, impulseIds, now)
     val spentByCategory = currentMonthExpenseByCategory(transactions, now)
     val monthTotals = currentMonthTotals(transactions, now)
-    val monthBudget = categories.sumOf { it.monthlyBudgetMinor }
+
+    val totalGoalContrib = goals.sumOf { it.monthlyContribMinor }
+    // Budżet = szacowane zarobki minus to, co ma pójść na cele — czyli ile realnie można wydać.
+    val monthBudget = max(0L, estimatedIncomeMinor - totalGoalContrib)
 
     val adherence = budgetAdherence(categories, spentByCategory)
     val rate = savingsRate(monthTotals.incomeMinor, monthTotals.expenseMinor)
@@ -66,5 +82,8 @@ fun buildMotivationSnapshot(
         dailyBudgetForRestOfMonthMinor = dailyBudgetRest,
         nextBadge = nextBadge(streak),
         mascotMood = mascotMoodFor(score),
+        estimatedIncomeMinor = estimatedIncomeMinor,
+        totalGoalContribMinor = totalGoalContrib,
+        hasIncomePlan = estimatedIncomeMinor > 0L,
     )
 }

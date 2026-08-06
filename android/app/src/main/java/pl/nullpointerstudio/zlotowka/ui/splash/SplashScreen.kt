@@ -44,6 +44,18 @@ private val PLN_FACTS = listOf(
     "Symbol „zł” to skrót od „złoty” — waluty Polski od 1919 roku.",
     "W 1995 roku denominacja wymieniła 10 000 starych złotych na 1 nowy.",
     "Na monetach 5 zł od 1995 roku widnieje orzeł w koronie.",
+    "Nazwa „złoty” pochodzi od złotych dukatów używanych w dawnej Polsce.",
+    "Pierwsze polskie banknoty złotowe wydrukowano w 1924 roku.",
+    "Przed złotym w obiegu były marki polskie — zdewaluowane przez hiperinflację lat 20.",
+    "Na banknocie 20 zł znajduje się Kazimierz III Wielki.",
+    "Skrót „PLN” to międzynarodowy kod ISO 4217 dla złotego po denominacji 1995 roku.",
+    "Stary kod złotego (sprzed 1995) to „PLZ” — dziś już nieużywany.",
+    "Moneta 2 zł z 1995 roku to jedna z pierwszych monet nowego złotego.",
+    "Grosz jako nazwa pochodzi od łacińskiego „grossus” — „gruby” (dawniej grubsza moneta).",
+    "Polska nie należy do strefy euro — złoty pozostaje walutą narodową od ponad 100 lat.",
+    "Zasada 50/30/20: 50% budżetu na potrzeby, 30% na chcenia, 20% na oszczędności.",
+    "Metoda koperty: fizyczny (lub cyfrowy) podział budżetu na kategorie ogranicza przepłacanie.",
+    "Automatyczne odkładanie „zaraz po wypłacie” działa lepiej niż odkładanie „tego, co zostanie”.",
 )
 
 /**

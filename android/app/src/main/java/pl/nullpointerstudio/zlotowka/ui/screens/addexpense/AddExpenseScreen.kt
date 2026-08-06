@@ -95,7 +95,7 @@ fun AddExpenseScreen(transactionId: String? = null, onDone: () -> Unit) {
 
     var amountText by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
-    var selectedMethod by remember { mutableStateOf(PaymentMethod.BLIK) }
+    var selectedMethod by remember { mutableStateOf(PaymentMethod.CARD) }
     var note by remember { mutableStateOf("") }
     var isIncome by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
@@ -114,7 +114,9 @@ fun AddExpenseScreen(transactionId: String? = null, onDone: () -> Unit) {
         val tx = existingTransaction ?: return@LaunchedEffect
         amountText = minorToInputText(tx.amountMinor)
         selectedCategoryId = tx.categoryId
-        selectedMethod = tx.method
+        // Aplikacja rozróżnia dziś tylko Kartę/Gotówkę; starsze wpisy (BLIK/Przelew) mapujemy na Kartę,
+        // żeby zawsze jeden z dwóch widocznych chipów był podświetlony.
+        selectedMethod = if (tx.method == PaymentMethod.CASH) PaymentMethod.CASH else PaymentMethod.CARD
         note = tx.note ?: ""
         isIncome = tx.amountMinor > 0
         val zoned = Instant.ofEpochMilli(tx.timestamp).atZone(ZoneId.systemDefault())
@@ -291,7 +293,6 @@ fun AddExpenseScreen(transactionId: String? = null, onDone: () -> Unit) {
             modifier = Modifier.padding(top = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            PaymentMethodChip("BLIK", selectedMethod == PaymentMethod.BLIK) { selectedMethod = PaymentMethod.BLIK }
             PaymentMethodChip("Karta", selectedMethod == PaymentMethod.CARD) { selectedMethod = PaymentMethod.CARD }
             PaymentMethodChip("Gotówka", selectedMethod == PaymentMethod.CASH) { selectedMethod = PaymentMethod.CASH }
         }

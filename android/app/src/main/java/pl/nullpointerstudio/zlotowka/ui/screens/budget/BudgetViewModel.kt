@@ -76,4 +76,9 @@ class BudgetViewModel(private val repository: BudgetRepository) : ViewModel() {
             onUnlocked(unlocked)
         }
     }
+
+    /** Zapisuje szacowane miesięczne zarobki — od tego liczy się teraz dzienny budżet. */
+    fun setEstimatedIncome(estimatedIncomeMinor: Long) {
+        viewModelScope.launch { repository.setEstimatedIncome(estimatedIncomeMinor) }
+    }
 }

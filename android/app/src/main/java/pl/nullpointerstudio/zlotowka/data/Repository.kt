@@ -15,7 +15,7 @@ import kotlin.math.max
 const val FALLBACK_CATEGORY_ID = "inne"
 
 /** Jedyne wejście do danych aplikacji — Compose, widget Glance i workery powiadomień korzystają z tego samego repo. */
-class BudgetRepository(private val db: AppDatabase) {
+class BudgetRepository(private val db: AppDatabase, private val settingsRepository: SettingsRepository) {
 
     val transactions: Flow<List<TransactionEntity>> = db.transactionDao().observeAll()
     val categories: Flow<List<CategoryEntity>> = db.categoryDao().observeAll()
@@ -23,7 +23,14 @@ class BudgetRepository(private val db: AppDatabase) {
     val contributions: Flow<List<ContributionEntity>> = db.contributionDao().observeAll()
 
     val motivationSnapshot: Flow<MotivationSnapshot> =
-        combine(categories, transactions) { cats, txs -> buildMotivationSnapshot(cats, txs) }
+        combine(categories, transactions, goals, settingsRepository.budgetPlan) { cats, txs, gls, plan ->
+            buildMotivationSnapshot(cats, txs, gls, plan.estimatedIncomeMinor)
+        }
+
+    /** Zapisuje szacowane miesięczne zarobki użyte do liczenia dziennego budżetu (patrz ekran Budżet). */
+    suspend fun setEstimatedIncome(estimatedIncomeMinor: Long) {
+        settingsRepository.setEstimatedIncome(estimatedIncomeMinor)
+    }
 
     fun contributionsForGoal(goalId: String): Flow<List<ContributionEntity>> =
         db.contributionDao().observeForGoal(goalId)
@@ -34,10 +41,15 @@ class BudgetRepository(private val db: AppDatabase) {
     /**
      * Aplikacja jest do wpisywania WŁASNYCH danych — zasiewamy wyłącznie domyślną listę kategorii
      * (żeby ekran dodawania wydatku miał z czego wybierać), bez żadnych fikcyjnych transakcji/celów.
+     * Uruchamiane przy KAŻDYM starcie: brakujące domyślne kategorie (np. dodane w nowszej wersji
+     * aplikacji) są douzupełniane po id, a już istniejące — w tym zmienione przez użytkownika —
+     * nigdy nie są nadpisywane.
      */
     suspend fun seedIfNeeded() {
-        if (db.categoryDao().count() == 0) {
-            db.categoryDao().insertAll(SeedData.categories())
+        val existingIds = db.categoryDao().observeAll().first().map { it.id }.toHashSet()
+        val missing = SeedData.categories().filter { it.id !in existingIds }
+        if (missing.isNotEmpty()) {
+            db.categoryDao().insertAll(missing)
         }
     }
 

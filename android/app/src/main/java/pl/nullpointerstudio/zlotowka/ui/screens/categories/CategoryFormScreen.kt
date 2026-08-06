@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,9 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
-import androidx.emoji2.emojipicker.EmojiPickerView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -72,6 +73,26 @@ import pl.nullpointerstudio.zlotowka.ui.theme.TextPrimary
 import pl.nullpointerstudio.zlotowka.ui.theme.toColor
 
 private const val DEFAULT_EMOJI = "🏷️"
+
+/**
+ * Kurowana lista emoji do wyboru ikony kategorii — zamiast [androidx.emoji2.emojipicker.EmojiPickerView],
+ * które przy pierwszym otwarciu potrafi zablokować główny wątek na tyle długo, że system pokazuje
+ * "aplikacja nie odpowiada" (zwłaszcza na emulatorze). Ten picker jest w 100% w Compose, bez ryzyka ANR.
+ */
+private val EMOJI_CHOICES = listOf(
+    "🍔", "🍕", "🍜", "🍣", "🍱", "🥗", "🍿", "🍩", "🍫", "🍷", "🍺", "🍹", "☕", "🧋", "🥤",
+    "🚗", "🚕", "🚌", "🚈", "🚲", "✈️", "🚀", "⛽", "🅿️", "🚕",
+    "🏠", "🏡", "🏢", "🛋️", "🛏️", "🚿", "🧹", "🧺", "💡", "🔌",
+    "🛍️", "🛒", "👗", "👟", "👜", "💄", "💅", "💇",
+    "🎮", "🎲", "🎬", "🎧", "🎤", "🎨", "🖼️", "📚", "🎓",
+    "💊", "🩺", "🏋️", "🧘", "🦷", "🧴", "🧼",
+    "💻", "📱", "⌚", "🖨️", "📷", "🔋", "🔧", "🧰",
+    "💰", "💳", "🏦", "📈", "📉", "🧾", "🎁", "🎉", "🎂",
+    "🐶", "🐱", "🐦", "🐟", "🌱", "🌸", "🌍",
+    "⚽", "🏀", "🎾", "🏈", "⛳", "🏊", "🚴",
+    "📝", "✏️", "📌", "📅", "⏰", "🔔", "❤️", "⭐", "✨", "🔥", "💧", "☀️", "🌙",
+    "🧳", "🗺️", "🏖️", "⛰️", "🎡", "🏷️",
+)
 
 /** Formularz "Nowa kategoria" / "Edytuj kategorię" — pełny CRUD kategorii wydatków. */
 @Composable
@@ -296,20 +317,30 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
             SurfaceCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SectionLabel(text = "Wybierz emoji")
-                    AndroidView(
-                        factory = { ctx ->
-                            EmojiPickerView(ctx).apply {
-                                setOnEmojiPickedListener { emojiViewItem ->
-                                    emoji = emojiViewItem.emoji
-                                    showEmojiPicker = false
-                                }
-                            }
-                        },
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(6),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(360.dp)
                             .padding(top = 8.dp),
-                    )
+                    ) {
+                        items(EMOJI_CHOICES) { candidate ->
+                            Box(
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (candidate == emoji) Lime.copy(alpha = 0.18f) else Surface)
+                                    .clickable {
+                                        emoji = candidate
+                                        showEmojiPicker = false
+                                    },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(text = candidate, fontSize = 22.sp)
+                            }
+                        }
+                    }
                 }
             }
         }

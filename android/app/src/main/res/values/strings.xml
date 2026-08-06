@@ -9,4 +9,6 @@
     <string name="notif_channel_weekly_desc">Cotygodniowy raport wydatków z sugestiami</string>
     <string name="notif_channel_milestone_name">Kamienie milowe i odznaki</string>
     <string name="notif_channel_milestone_desc">Odblokowania nagród i odznak motywacyjnych</string>
+    <string name="notif_channel_motivation_name">Motywacyjne wskazówki</string>
+    <string name="notif_channel_motivation_desc">Krótkie zachęty do oszczędzania w ciągu dnia</string>
 </resources>
