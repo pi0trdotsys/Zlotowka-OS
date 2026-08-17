@@ -25,11 +25,12 @@ import { StatusBar, TabBar } from "./PhoneFrame";
 
 /* ---------- HISTOGRAM PRZEPŁYWU: wydatki vs dochody ---------- */
 export function FlowHistogram() {
-  const scale = flowScaleMinor();
+  const { incomeMax, expenseMax } = flowScales();
   const totals = weekTotals();
-  const H = 62; // maks. wysokość słupka w px (w każdą stronę)
+  const H = 56; // maks. wysokość słupka w px (osobno w górę i w dół)
+  const worst = Math.max(...dailyFlow.map((d) => d.expenseMinor));
   return (
-    <div className="mt-5 rounded-2xl border border-border bg-surface p-4">
+    <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
@@ -41,28 +42,31 @@ export function FlowHistogram() {
             <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1 text-[9px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <i className="h-1.5 w-3 rounded-full bg-lime" /> wpływy
+            <i className="h-1.5 w-2.5 rounded-full bg-lime" /> wpływy
           </span>
           <span className="flex items-center gap-1">
-            <i className="h-1.5 w-3 rounded-full bg-coral" /> wydatki
+            <i className="h-1.5 w-2.5 rounded-full bg-coral" /> wydatki
           </span>
         </div>
       </div>
 
-      <div className="mt-4 flex items-stretch gap-1.5">
+      <div className="mt-3 flex items-stretch gap-1.5">
         {dailyFlow.map((d) => {
-          const inH = Math.round((d.incomeMinor / scale) * H);
-          const outH = Math.round((d.expenseMinor / scale) * H);
+          const inH = Math.round((d.incomeMinor / incomeMax) * H);
+          const outH = Math.round((d.expenseMinor / expenseMax) * H);
+          const isWorst = d.expenseMinor === worst;
           return (
-            <div key={d.day} className="flex flex-1 flex-col items-center">
+            <div key={d.day} className="group flex flex-1 flex-col items-center">
               {/* wpływy — nad osią */}
-              <div className="flex h-[62px] w-full flex-col justify-end">
-                <div
-                  className={`w-full rounded-t-md ${d.incomeMinor > 0 ? "bg-lime" : "bg-transparent"}`}
-                  style={{ height: `${Math.max(d.incomeMinor > 0 ? 3 : 0, inH)}px` }}
-                />
+              <div className="flex h-[56px] w-full flex-col justify-end">
+                {d.incomeMinor > 0 && (
+                  <div
+                    className="w-full rounded-t-md bg-lime/90"
+                    style={{ height: `${Math.max(3, inH)}px` }}
+                  />
+                )}
               </div>
               {/* oś zera */}
               <div
@@ -70,14 +74,18 @@ export function FlowHistogram() {
                 aria-hidden
               />
               {/* wydatki — pod osią */}
-              <div className="h-[62px] w-full">
-                <div
-                  className={`w-full rounded-b-md ${d.expenseMinor > 0 ? "bg-coral" : "bg-transparent"}`}
-                  style={{ height: `${Math.max(d.expenseMinor > 0 ? 3 : 0, outH)}px` }}
-                />
+              <div className="h-[56px] w-full">
+                {d.expenseMinor > 0 && (
+                  <div
+                    className={`w-full rounded-b-md ${isWorst ? "bg-coral" : "bg-coral/55"}`}
+                    style={{ height: `${Math.max(3, outH)}px` }}
+                  />
+                )}
               </div>
               <span
-                className={`tabular mt-1.5 text-[9px] ${d.isToday ? "text-cyan" : "text-muted-foreground"}`}
+                className={`tabular mt-1.5 rounded-full px-1.5 text-[9px] ${
+                  d.isToday ? "bg-cyan/15 text-cyan" : "text-muted-foreground"
+                }`}
               >
                 {d.day}
               </span>
@@ -86,21 +94,29 @@ export function FlowHistogram() {
         })}
       </div>
 
-      <div className="tabular mt-3 flex items-center justify-between border-t border-border pt-3 text-[10px]">
-        <span className="text-muted-foreground">Bilans tygodnia</span>
-        <span className={totals.balanceMinor >= 0 ? "text-lime" : "text-coral"}>
-          {pln(totals.balanceMinor, { sign: true })}
-        </span>
+      <div className="tabular mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-[10px]">
+        <div className="rounded-lg bg-surface-2/60 px-2 py-1.5">
+          <p className="text-muted-foreground">Bilans tygodnia</p>
+          <p className={`mt-0.5 ${totals.balanceMinor >= 0 ? "text-lime" : "text-coral"}`}>
+            {pln(totals.balanceMinor, { sign: true })}
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface-2/60 px-2 py-1.5">
+          <p className="text-muted-foreground">Dziś</p>
+          <p
+            className={`mt-0.5 ${dayBalanceMinor(dailyFlow[6]) >= 0 ? "text-lime" : "text-coral"}`}
+          >
+            {pln(dayBalanceMinor(dailyFlow[6]), { sign: true })}
+          </p>
+        </div>
       </div>
-      <div className="tabular mt-1 flex items-center justify-between text-[10px]">
-        <span className="text-muted-foreground">Dziś</span>
-        <span className={dayBalanceMinor(dailyFlow[6]) >= 0 ? "text-lime" : "text-coral"}>
-          {pln(dayBalanceMinor(dailyFlow[6]), { sign: true })}
-        </span>
-      </div>
+      <p className="mt-2 text-[9px] leading-tight text-muted-foreground">
+        Skale góra/dół są niezależne — dzień wypłaty nie spłaszcza wydatków.
+      </p>
     </div>
   );
 }
+
 
 /* ---------- 1. PULPIT ---------- */
 export function ScreenDashboard() {
