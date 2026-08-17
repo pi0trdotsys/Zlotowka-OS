@@ -1,4 +1,4 @@
-import { dailyFlow, flowScaleMinor, pln, plnShort, todayFlow, weekTotals } from "@/data/mock";
+import { dailyFlow, flowScales, pln, plnShort, todayFlow, weekTotals } from "@/data/mock";
 
 /* ============ 2x1 — pasek jednowierszowy (najważniejszy format) ============ */
 
@@ -43,7 +43,7 @@ export function Widget2x1Left() {
 
 /** 2x1 C — mikro-histogram 7 dni (wpływy nad osią, wydatki pod). */
 export function Widget2x1Spark() {
-  const scale = flowScaleMinor();
+  const { incomeMax, expenseMax } = flowScales();
   return (
     <div className="flex w-[170px] items-center gap-3 rounded-2xl border border-border bg-surface/90 px-3 py-2.5 backdrop-blur">
       <div className="flex flex-1 items-stretch gap-[3px]">
@@ -52,14 +52,14 @@ export function Widget2x1Spark() {
             <div className="flex h-[14px] w-full flex-col justify-end">
               <div
                 className="w-full rounded-t-sm bg-lime"
-                style={{ height: `${Math.round((d.incomeMinor / scale) * 14)}px` }}
+                style={{ height: `${Math.round((d.incomeMinor / incomeMax) * 14)}px` }}
               />
             </div>
             <div className="h-px w-full bg-border" />
             <div className="h-[14px] w-full">
               <div
                 className="w-full rounded-b-sm bg-coral"
-                style={{ height: `${Math.round((d.expenseMinor / scale) * 14)}px` }}
+                style={{ height: `${Math.round((d.expenseMinor / expenseMax) * 14)}px` }}
               />
             </div>
           </div>
@@ -98,7 +98,7 @@ export function Widget2x1QuickAdd() {
 
 /* ============ 4x2 — „Pasek dnia” ============ */
 export function WidgetWide() {
-  const scale = flowScaleMinor();
+  const { incomeMax, expenseMax } = flowScales();
   return (
     <div className="w-full max-w-[340px] rounded-3xl border border-border bg-surface/90 p-4 backdrop-blur">
       <div className="flex items-start justify-between">
@@ -118,14 +118,14 @@ export function WidgetWide() {
             <div className="flex h-[18px] w-full flex-col justify-end">
               <div
                 className="w-full rounded-t-sm bg-lime"
-                style={{ height: `${Math.round((d.incomeMinor / scale) * 18)}px` }}
+                style={{ height: `${Math.round((d.incomeMinor / incomeMax) * 18)}px` }}
               />
             </div>
             <div className={`h-px w-full ${d.isToday ? "bg-cyan" : "bg-border"}`} />
             <div className="h-[18px] w-full">
               <div
                 className="w-full rounded-b-sm bg-coral"
-                style={{ height: `${Math.round((d.expenseMinor / scale) * 18)}px` }}
+                style={{ height: `${Math.round((d.expenseMinor / expenseMax) * 18)}px` }}
               />
             </div>
             <span className="tabular mt-1 text-[8px] text-muted-foreground">{d.day}</span>
