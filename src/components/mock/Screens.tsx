@@ -36,9 +36,9 @@ export function FlowHistogram() {
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
             Przepływ 7 dni
           </p>
-          <p className="tabular mt-1 text-sm">
+          <p className="tabular mt-1 whitespace-nowrap text-xs">
             <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
-            <span className="text-muted-foreground"> / </span>
+            <span className="text-muted-foreground"> · </span>
             <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
           </p>
         </div>
