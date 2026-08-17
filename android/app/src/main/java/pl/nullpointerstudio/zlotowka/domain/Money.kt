@@ -20,6 +20,16 @@ fun Long.toPln(withSign: Boolean = false): String {
     return (if (this < 0) "− " else "+ ") + text
 }
 
+/** Krótki format kwoty do widgetów i histogramu: „1,2 tys." / „42,10" — identyczny z plnShort w mock.ts. */
+fun Long.toPlnShort(): String {
+    val v = abs(this) / 100.0
+    if (v >= 1000) {
+        val tys = v / 1000
+        return "${"%.1f".format(plLocale, tys).replace('.', ',')} tys."
+    }
+    return "%.2f".format(plLocale, v).replace('.', ',')
+}
+
 /** Skrócona nazwa miesiąca po polsku, np. "lip 2026". */
 fun formatMonthYear(epochMillis: Long): String {
     val cal = java.util.Calendar.getInstance(plLocale)

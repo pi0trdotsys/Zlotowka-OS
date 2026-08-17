@@ -190,6 +190,28 @@ fun weeklyFlowSeries(transactions: List<TransactionEntity>, now: Long = System.c
     }
 }
 
+data class FlowScales(val incomeMax: Long, val expenseMax: Long)
+
+/**
+ * Osobne skale dla wpływów i wydatków — identyczne z flowScales w mock.ts.
+ * Jedna wypłata spłaszczyłaby wszystkie wydatki do niewidocznych kresek,
+ * dlatego każda połowa osi histogramu ma własne maksimum.
+ */
+fun flowScales(days: List<DayFlow>): FlowScales = FlowScales(
+    incomeMax = (days.maxOfOrNull { it.incomeMinor } ?: 0L).coerceAtLeast(1L),
+    expenseMax = (days.maxOfOrNull { it.expenseMinor } ?: 0L).coerceAtLeast(1L),
+)
+
+data class WeekFlowTotals(val incomeMinor: Long, val expenseMinor: Long) {
+    val balanceMinor: Long get() = incomeMinor - expenseMinor
+}
+
+/** Sumy tygodnia — identyczne z weekTotals w mock.ts. */
+fun weekFlowTotals(days: List<DayFlow>): WeekFlowTotals = WeekFlowTotals(
+    incomeMinor = days.sumOf { it.incomeMinor },
+    expenseMinor = days.sumOf { it.expenseMinor },
+)
+
 data class WeekdayAverage(val dayLabel: String, val averageMinor: Long)
 
 /** Średni wydatek per dzień tygodnia z całej historii — który dzień jest "najdroższy". */
@@ -221,6 +243,16 @@ fun currentMonthExpenseByCategory(transactions: List<TransactionEntity>, now: Lo
         .filter { it.timestamp in curStart until curEnd && it.amountMinor < 0 }
         .groupBy { it.categoryId }
         .mapValues { (_, v) -> v.sumOf { -it.amountMinor } }
+}
+
+/** Dochody wg kategorii w bieżącym miesiącu kalendarzowym — do ekranu Kategorie w widoku Dochody. */
+fun currentMonthIncomeByCategory(transactions: List<TransactionEntity>, now: Long = System.currentTimeMillis()): Map<String, Long> {
+    val curStart = startOfMonth(now)
+    val curEnd = (calendarAt(curStart).clone() as Calendar).apply { add(Calendar.MONTH, 1) }.timeInMillis
+    return transactions.asSequence()
+        .filter { it.timestamp in curStart until curEnd && it.amountMinor > 0 }
+        .groupBy { it.categoryId }
+        .mapValues { (_, v) -> v.sumOf { it.amountMinor } }
 }
 
 data class MonthTotals(val incomeMinor: Long, val expenseMinor: Long, val daysInMonth: Int, val dayOfMonth: Int)

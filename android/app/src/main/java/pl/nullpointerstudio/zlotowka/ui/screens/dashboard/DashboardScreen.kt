@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,7 +45,10 @@ import pl.nullpointerstudio.zlotowka.data.TransactionEntity
 import pl.nullpointerstudio.zlotowka.domain.DayFlow
 import pl.nullpointerstudio.zlotowka.domain.MotivationSnapshot
 import pl.nullpointerstudio.zlotowka.domain.TransactionFilter
+import pl.nullpointerstudio.zlotowka.domain.flowScales
 import pl.nullpointerstudio.zlotowka.domain.toPln
+import pl.nullpointerstudio.zlotowka.domain.toPlnShort
+import pl.nullpointerstudio.zlotowka.domain.weekFlowTotals
 import pl.nullpointerstudio.zlotowka.ui.components.AmountText
 import pl.nullpointerstudio.zlotowka.ui.components.Pill
 import pl.nullpointerstudio.zlotowka.ui.components.ProgressBar
@@ -47,7 +56,9 @@ import pl.nullpointerstudio.zlotowka.ui.components.SectionLabel
 import pl.nullpointerstudio.zlotowka.ui.components.SurfaceCard
 import pl.nullpointerstudio.zlotowka.ui.mascot.Mascot
 import pl.nullpointerstudio.zlotowka.ui.nav.Destinations
+import pl.nullpointerstudio.zlotowka.ui.theme.BorderOnDark
 import pl.nullpointerstudio.zlotowka.ui.theme.Coral
+import pl.nullpointerstudio.zlotowka.ui.theme.Cyan
 import pl.nullpointerstudio.zlotowka.ui.theme.Lime
 import pl.nullpointerstudio.zlotowka.ui.theme.Surface2
 import pl.nullpointerstudio.zlotowka.ui.theme.TextMuted
@@ -109,9 +120,8 @@ fun DashboardScreen(onNavigate: (String) -> Unit, onOpenTransaction: (String) ->
         )
 
         if (uiState.weeklyFlow.isNotEmpty()) {
-            WeeklyBars(
+            FlowHistogram(
                 weeklyFlow = uiState.weeklyFlow,
-                filter = uiState.filter,
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
@@ -213,95 +223,189 @@ private fun PulseCard(snapshot: MotivationSnapshot, modifier: Modifier = Modifie
     }
 }
 
+/**
+ * Histogram przepływu — mirror 1:1 FlowHistogram z Screens.tsx: wpływy nad osią,
+ * wydatki pod osią, osobne skale dla każdego kierunku (żeby jedna wypłata nie
+ * spłaszczyła wszystkich słupków wydatków), oś dnia dzisiejszego na cyan.
+ */
 @Composable
-private fun WeeklyBars(
-    weeklyFlow: List<DayFlow>,
-    filter: TransactionFilter,
-    modifier: Modifier = Modifier,
-) {
-    val max = maxOf(
-        weeklyFlow.maxOfOrNull { it.expenseMinor } ?: 0L,
-        weeklyFlow.maxOfOrNull { it.incomeMinor } ?: 0L,
-    ).coerceAtLeast(1L)
-    val showExpense = filter != TransactionFilter.INCOME
-    val showIncome = filter != TransactionFilter.EXPENSE
+private fun FlowHistogram(weeklyFlow: List<DayFlow>, modifier: Modifier = Modifier) {
+    val scales = remember(weeklyFlow) { flowScales(weeklyFlow) }
+    val totals = remember(weeklyFlow) { weekFlowTotals(weeklyFlow) }
+    val worstExpense = remember(weeklyFlow) { weeklyFlow.maxOfOrNull { it.expenseMinor } ?: 0L }
+    val today = weeklyFlow.lastOrNull { it.isToday } ?: weeklyFlow.last()
+    val barMax = 56.dp
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(96.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.Bottom,
-    ) {
-        weeklyFlow.forEach { day ->
-            val expenseFraction = if (showExpense) {
-                (day.expenseMinor.toFloat() / max.toFloat()).coerceIn(0.03f, 1f)
-            } else {
-                0f
-            }
-            val incomeFraction = if (showIncome) {
-                (day.incomeMinor.toFloat() / max.toFloat()).coerceIn(0.03f, 1f)
-            } else {
-                0f
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom,
+    SurfaceCard(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(70.dp),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    verticalAlignment = Alignment.Bottom,
-                ) {
-                    if (showExpense) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(70.dp * expenseFraction)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(if (day.isToday) Coral else Coral.copy(alpha = 0.75f)),
-                        )
-                    }
-                    if (showIncome) {
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(70.dp * incomeFraction)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(if (day.isToday) Lime else Lime.copy(alpha = 0.75f)),
-                        )
-                    }
-                    if (!showExpense && !showIncome) {
-                        // Nie powinno się zdarzyć — filtr zawsze pokazuje co najmniej jedną serię.
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(2.dp)
-                                .background(Surface2),
-                        )
-                    }
-                }
+                SectionLabel(text = "Przepływ")
                 Text(
-                    text = day.dayLabel,
-                    color = if (day.isToday) TextPrimary else TextMuted,
-                    fontSize = 9.sp,
-                    modifier = Modifier.padding(top = 6.dp),
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(color = Lime)) { append("+${totals.incomeMinor.toPlnShort()}") }
+                        withStyle(SpanStyle(color = TextMuted)) { append(" · ") }
+                        withStyle(SpanStyle(color = Coral)) { append("−${totals.expenseMinor.toPlnShort()}") }
+                    },
+                    fontSize = 12.sp,
                 )
-                if (day.isToday) {
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 2.dp)
-                            .height(2.dp)
-                            .width(10.dp)
-                            .clip(RoundedCornerShape(1.dp))
-                            .background(Lime),
-                    )
+            }
+
+            Row(
+                modifier = Modifier.padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                LegendDot(color = Lime, label = "wpływy")
+                LegendDot(color = Coral, label = "wydatki")
+                Text(
+                    text = "ostatnie 7 dni",
+                    color = TextMuted,
+                    fontSize = 9.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End,
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                weeklyFlow.forEach { day ->
+                    val inFraction = (day.incomeMinor.toFloat() / scales.incomeMax.toFloat()).coerceIn(0f, 1f)
+                    val outFraction = (day.expenseMinor.toFloat() / scales.expenseMax.toFloat()).coerceIn(0f, 1f)
+                    val isWorst = day.expenseMinor > 0 && day.expenseMinor == worstExpense
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        // wpływy — nad osią
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(barMax),
+                            contentAlignment = Alignment.BottomCenter,
+                        ) {
+                            if (day.incomeMinor > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((barMax * inFraction).coerceAtLeast(3.dp))
+                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                        .background(Lime.copy(alpha = 0.9f)),
+                                )
+                            }
+                        }
+                        // oś zera
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(1.dp)
+                                .background(if (day.isToday) Cyan else BorderOnDark),
+                        )
+                        // wydatki — pod osią
+                        Box(modifier = Modifier.fillMaxWidth().height(barMax)) {
+                            if (day.expenseMinor > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height((barMax * outFraction).coerceAtLeast(3.dp))
+                                        .clip(RoundedCornerShape(bottomStart = 4.dp, bottomEnd = 4.dp))
+                                        .background(if (isWorst) Coral else Coral.copy(alpha = 0.55f)),
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 6.dp)
+                                .clip(RoundedCornerShape(999.dp))
+                                .then(
+                                    if (day.isToday) Modifier.background(Cyan.copy(alpha = 0.15f)) else Modifier,
+                                )
+                                .padding(horizontal = 5.dp, vertical = 1.dp),
+                        ) {
+                            Text(
+                                text = day.dayLabel,
+                                color = if (day.isToday) Cyan else TextMuted,
+                                fontSize = 9.sp,
+                            )
+                        }
+                    }
                 }
             }
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .fillMaxWidth()
+                    .background(BorderOnDark)
+                    .height(1.dp),
+            ) {}
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FlowStatChip(
+                    label = "Bilans tygodnia",
+                    valueMinor = totals.balanceMinor,
+                    modifier = Modifier.weight(1f),
+                )
+                FlowStatChip(
+                    label = "Dziś",
+                    valueMinor = today.incomeMinor - today.expenseMinor,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            Text(
+                text = "Skale góra/dół są niezależne — dzień wypłaty nie spłaszcza wydatków.",
+                color = TextMuted,
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegendDot(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(width = 10.dp, height = 6.dp)
+                .clip(RoundedCornerShape(999.dp))
+                .background(color),
+        )
+        Text(text = label, color = TextMuted, fontSize = 9.sp, modifier = Modifier.padding(start = 4.dp))
+    }
+}
+
+@Composable
+private fun FlowStatChip(label: String, valueMinor: Long, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(Surface2.copy(alpha = 0.6f))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+        Column {
+            Text(text = label, color = TextMuted, fontSize = 10.sp)
+            Text(
+                text = valueMinor.toPln(withSign = true),
+                color = if (valueMinor >= 0) Lime else Coral,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
     }
 }

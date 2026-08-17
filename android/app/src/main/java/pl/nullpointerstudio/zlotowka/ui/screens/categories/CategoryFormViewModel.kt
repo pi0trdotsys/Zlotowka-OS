@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import pl.nullpointerstudio.zlotowka.data.BudgetRepository
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
+import pl.nullpointerstudio.zlotowka.data.CategoryKind
 
 /** Stan formularza kategorii — w trybie edycji wypełniany istniejącą kategorią po jej wczytaniu. */
 data class CategoryFormUiState(
@@ -45,6 +46,7 @@ class CategoryFormViewModel(
         colorToken: String,
         monthlyBudgetMinor: Long,
         isImpulse: Boolean,
+        kind: CategoryKind,
     ) {
         val id = categoryId
         if (id == null) {
@@ -54,6 +56,7 @@ class CategoryFormViewModel(
                 colorToken = colorToken,
                 monthlyBudgetMinor = monthlyBudgetMinor,
                 isImpulse = isImpulse,
+                kind = kind,
             )
         } else {
             val originalSortOrder = uiState.value.existing?.sortOrder ?: 0
@@ -66,6 +69,7 @@ class CategoryFormViewModel(
                     monthlyBudgetMinor = monthlyBudgetMinor,
                     sortOrder = originalSortOrder,
                     isImpulse = isImpulse,
+                    kind = kind,
                 ),
             )
         }

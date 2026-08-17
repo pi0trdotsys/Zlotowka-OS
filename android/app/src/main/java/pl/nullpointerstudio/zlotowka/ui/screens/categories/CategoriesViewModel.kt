@@ -9,12 +9,15 @@ import kotlinx.coroutines.flow.stateIn
 import pl.nullpointerstudio.zlotowka.data.BudgetRepository
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
 import pl.nullpointerstudio.zlotowka.domain.currentMonthExpenseByCategory
+import pl.nullpointerstudio.zlotowka.domain.currentMonthIncomeByCategory
 
-/** Stan ekranu Kategorie — mirror ScreenCategories z Screens.tsx. */
+/** Stan ekranu Kategorie — mirror ScreenCategories z Screens.tsx, z osobnymi listami wydatków i dochodów. */
 data class CategoriesUiState(
     val categories: List<CategoryEntity> = emptyList(),
     val spentByCategory: Map<String, Long> = emptyMap(),
+    val receivedByCategory: Map<String, Long> = emptyMap(),
     val totalSpentMinor: Long = 0L,
+    val totalReceivedMinor: Long = 0L,
     val loading: Boolean = true,
 )
 
@@ -25,10 +28,13 @@ class CategoriesViewModel(private val repository: BudgetRepository) : ViewModel(
         repository.transactions,
     ) { categories, transactions ->
         val spentByCategory = currentMonthExpenseByCategory(transactions)
+        val receivedByCategory = currentMonthIncomeByCategory(transactions)
         CategoriesUiState(
             categories = categories.sortedBy { it.sortOrder },
             spentByCategory = spentByCategory,
+            receivedByCategory = receivedByCategory,
             totalSpentMinor = spentByCategory.values.sum(),
+            totalReceivedMinor = receivedByCategory.values.sum(),
             loading = false,
         )
     }.stateIn(

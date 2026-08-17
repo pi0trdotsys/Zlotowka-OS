@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +28,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
 import pl.nullpointerstudio.zlotowka.ZlotowkaApp
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
+import pl.nullpointerstudio.zlotowka.data.CategoryKind
 import pl.nullpointerstudio.zlotowka.domain.toPln
 import pl.nullpointerstudio.zlotowka.ui.components.Pill
 import pl.nullpointerstudio.zlotowka.ui.components.ProgressBar
@@ -51,6 +54,10 @@ fun CategoriesScreen(onAddCategory: () -> Unit, onEditCategory: (String) -> Unit
         factory = viewModelFactory { initializer { CategoriesViewModel(app.repository) } },
     )
     val uiState by viewModel.uiState.collectAsState()
+    var showIncome by remember { mutableStateOf(false) }
+
+    val kind = if (showIncome) CategoryKind.INCOME else CategoryKind.EXPENSE
+    val categoriesForKind = uiState.categories.filter { it.kind == kind }
 
     Column(
         modifier = Modifier
@@ -66,9 +73,11 @@ fun CategoriesScreen(onAddCategory: () -> Unit, onEditCategory: (String) -> Unit
             verticalAlignment = Alignment.Top,
         ) {
             Column {
-                SectionLabel(text = "${currentFullMonthYear()} · wydano")
+                SectionLabel(
+                    text = if (showIncome) "${currentFullMonthYear()} · wpłynęło" else "${currentFullMonthYear()} · wydano",
+                )
                 Text(
-                    text = "${uiState.totalSpentMinor.toPln()}",
+                    text = if (showIncome) uiState.totalReceivedMinor.toPln() else uiState.totalSpentMinor.toPln(),
                     color = TextPrimary,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -85,17 +94,79 @@ fun CategoriesScreen(onAddCategory: () -> Unit, onEditCategory: (String) -> Unit
             )
         }
 
+        Row(
+            modifier = Modifier.padding(top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Pill(
+                text = "Wydatki",
+                accent = Coral,
+                filled = !showIncome,
+                modifier = Modifier.clickable { showIncome = false },
+            )
+            Pill(
+                text = "Dochody",
+                accent = Lime,
+                filled = showIncome,
+                modifier = Modifier.clickable { showIncome = true },
+            )
+        }
+
         Column(
             modifier = Modifier.padding(top = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            uiState.categories.forEach { category ->
-                CategoryRow(
-                    category = category,
-                    spentMinor = uiState.spentByCategory[category.id] ?: 0L,
-                    onClick = { onEditCategory(category.id) },
+            if (categoriesForKind.isEmpty()) {
+                Text(
+                    text = if (showIncome) "Brak kategorii dochodów — dodaj pierwszą." else "Brak kategorii wydatków — dodaj pierwszą.",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(vertical = 8.dp),
                 )
             }
+            categoriesForKind.forEach { category ->
+                if (showIncome) {
+                    IncomeCategoryRow(
+                        category = category,
+                        receivedMinor = uiState.receivedByCategory[category.id] ?: 0L,
+                        onClick = { onEditCategory(category.id) },
+                    )
+                } else {
+                    CategoryRow(
+                        category = category,
+                        spentMinor = uiState.spentByCategory[category.id] ?: 0L,
+                        onClick = { onEditCategory(category.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Wiersz kategorii dochodu — bez paska budżetu/limitu, bo dochodom się ich nie limituje. */
+@Composable
+private fun IncomeCategoryRow(category: CategoryEntity, receivedMinor: Long, onClick: () -> Unit) {
+    val tone = category.colorToken.toColorTone().toColor()
+
+    SurfaceCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(text = category.emoji, fontSize = 14.sp)
+            Text(
+                text = category.label,
+                color = TextPrimary,
+                fontSize = 12.sp,
+                modifier = Modifier.weight(1f).padding(start = 8.dp),
+            )
+            Text(text = "+${receivedMinor.toPln()}", color = tone, fontSize = 12.sp)
         }
     }
 }

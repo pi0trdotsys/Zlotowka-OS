@@ -48,6 +48,7 @@ import androidx.lifecycle.viewmodel.initializer
 import kotlinx.coroutines.launch
 import pl.nullpointerstudio.zlotowka.ZlotowkaApp
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
+import pl.nullpointerstudio.zlotowka.data.CategoryKind
 import pl.nullpointerstudio.zlotowka.data.PaymentMethod
 import pl.nullpointerstudio.zlotowka.domain.repeatedExpenseAlert
 import pl.nullpointerstudio.zlotowka.domain.toPln
@@ -103,9 +104,23 @@ fun AddExpenseScreen(transactionId: String? = null, onDone: () -> Unit) {
     var showDatePicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    // Wydatki i dochody mają osobne listy kategorii — filtrujemy siatkę wg przełącznika u góry.
+    val categoriesForKind = uiState.categories.filter {
+        it.kind == if (isIncome) CategoryKind.INCOME else CategoryKind.EXPENSE
+    }
+
     LaunchedEffect(uiState.categories) {
         if (selectedCategoryId == null) {
-            selectedCategoryId = uiState.categories.firstOrNull()?.id
+            selectedCategoryId = categoriesForKind.firstOrNull()?.id
+        }
+    }
+
+    // Gdy przełączymy Wydatek/Dochód, a wybrana kategoria nie pasuje już do nowego rodzaju
+    // (albo edytujemy stary wpis sprzed rozdziału kategorii) — podmieniamy na pierwszą pasującą.
+    LaunchedEffect(isIncome, uiState.categories) {
+        val stillValid = categoriesForKind.any { it.id == selectedCategoryId }
+        if (!stillValid) {
+            selectedCategoryId = categoriesForKind.firstOrNull()?.id
         }
     }
 
@@ -254,7 +269,7 @@ fun AddExpenseScreen(transactionId: String? = null, onDone: () -> Unit) {
             modifier = Modifier.padding(top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            uiState.categories.chunked(3).forEach { row ->
+            categoriesForKind.chunked(3).forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

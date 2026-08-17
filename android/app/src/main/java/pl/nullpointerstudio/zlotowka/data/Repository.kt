@@ -11,8 +11,15 @@ import pl.nullpointerstudio.zlotowka.domain.milestonesFor
 import java.util.UUID
 import kotlin.math.max
 
-/** Kategoria "kosza" — wybrane kategorie usuwa się bezpiecznie, przypisując ich transakcje tutaj. */
+/** Kategorie "kosza" — wybrane kategorie usuwa się bezpiecznie, przypisując ich transakcje tutaj. */
 const val FALLBACK_CATEGORY_ID = "inne"
+const val INCOME_FALLBACK_CATEGORY_ID = "inne_wplywy"
+
+/** Kategoria kosza właściwa dla danego rodzaju (wydatek → "Inne", dochód → "Inne wpływy"). */
+fun fallbackCategoryFor(kind: CategoryKind): String = when (kind) {
+    CategoryKind.EXPENSE -> FALLBACK_CATEGORY_ID
+    CategoryKind.INCOME -> INCOME_FALLBACK_CATEGORY_ID
+}
 
 /** Jedyne wejście do danych aplikacji — Compose, widget Glance i workery powiadomień korzystają z tego samego repo. */
 class BudgetRepository(private val db: AppDatabase, private val settingsRepository: SettingsRepository) {
@@ -92,6 +99,7 @@ class BudgetRepository(private val db: AppDatabase, private val settingsReposito
         colorToken: String,
         monthlyBudgetMinor: Long,
         isImpulse: Boolean,
+        kind: CategoryKind = CategoryKind.EXPENSE,
     ): String {
         val nextSort = db.categoryDao().maxSortOrder() + 1
         val id = UUID.randomUUID().toString()
@@ -104,6 +112,7 @@ class BudgetRepository(private val db: AppDatabase, private val settingsReposito
                 monthlyBudgetMinor = monthlyBudgetMinor,
                 sortOrder = nextSort,
                 isImpulse = isImpulse,
+                kind = kind,
             ),
         )
         return id
@@ -113,11 +122,14 @@ class BudgetRepository(private val db: AppDatabase, private val settingsReposito
         db.categoryDao().update(category)
     }
 
-    /** Usuwa kategorię; jej dotychczasowe transakcje trafiają do kategorii "Inne" (jeśli inna niż usuwana). */
+    /** Usuwa kategorię; jej dotychczasowe transakcje trafiają do kategorii kosza tego samego rodzaju. */
     suspend fun deleteCategory(id: String) {
         if (db.categoryDao().count() <= 1) return // zawsze zostaw co najmniej jedną kategorię
-        if (id != FALLBACK_CATEGORY_ID && db.categoryDao().observeAll().first().any { it.id == FALLBACK_CATEGORY_ID }) {
-            db.transactionDao().reassignCategory(id, FALLBACK_CATEGORY_ID)
+        val all = db.categoryDao().observeAll().first()
+        val deleted = all.firstOrNull { it.id == id } ?: return
+        val fallbackId = fallbackCategoryFor(deleted.kind)
+        if (id != fallbackId && all.any { it.id == fallbackId }) {
+            db.transactionDao().reassignCategory(id, fallbackId)
         }
         db.categoryDao().delete(id)
     }

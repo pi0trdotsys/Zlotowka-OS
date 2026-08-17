@@ -23,5 +23,15 @@ object SeedData {
         CategoryEntity("jedzenie_na_miescie", "Jedzenie na mieście", "🍽️", "coral", 0, 13, isImpulse = true),
         CategoryEntity("uroda", "Uroda/Pielęgnacja", "💅", "violet", 0, 14),
         CategoryEntity(FALLBACK_CATEGORY_ID, "Inne", "💰", "muted", 0, 6),
+
+        // Dochody — osobna lista od wydatków, bo sposoby zarabiania są zupełnie inne.
+        CategoryEntity("wyplata", "Wypłata/Pensja", "💼", "lime", 0, 20, kind = CategoryKind.INCOME),
+        CategoryEntity("freelance", "Freelance/Zlecenia", "🧑‍💻", "cyan", 0, 21, kind = CategoryKind.INCOME),
+        CategoryEntity("sprzedaz", "Sprzedaż rzeczy", "📦", "amber", 0, 22, kind = CategoryKind.INCOME),
+        CategoryEntity("zwrot", "Zwrot/Refundacja", "↩️", "violet", 0, 23, kind = CategoryKind.INCOME),
+        CategoryEntity("prezent", "Prezent", "🎁", "coral", 0, 24, kind = CategoryKind.INCOME),
+        CategoryEntity("inwestycje", "Inwestycje/Dywidendy", "📈", "lime", 0, 25, kind = CategoryKind.INCOME),
+        CategoryEntity("stypendium", "Stypendium/Świadczenia", "🎓", "cyan", 0, 26, kind = CategoryKind.INCOME),
+        CategoryEntity(INCOME_FALLBACK_CATEGORY_ID, "Inne wpływy", "💰", "muted", 0, 27, kind = CategoryKind.INCOME),
     )
 }

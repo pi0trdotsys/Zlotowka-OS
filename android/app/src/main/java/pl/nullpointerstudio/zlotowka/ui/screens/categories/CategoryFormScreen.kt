@@ -59,6 +59,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.launch
 import pl.nullpointerstudio.zlotowka.ZlotowkaApp
+import pl.nullpointerstudio.zlotowka.data.CategoryKind
+import pl.nullpointerstudio.zlotowka.ui.components.Pill
 import pl.nullpointerstudio.zlotowka.ui.components.PrimaryPillButton
 import pl.nullpointerstudio.zlotowka.ui.components.SectionLabel
 import pl.nullpointerstudio.zlotowka.ui.components.SurfaceCard
@@ -112,6 +114,7 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
     var tone by remember { mutableStateOf(ColorTone.Lime) }
     var budgetText by remember { mutableStateOf("") }
     var isImpulse by remember { mutableStateOf(false) }
+    var kind by remember { mutableStateOf(CategoryKind.EXPENSE) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
@@ -123,6 +126,7 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
             tone = existing.colorToken.toColorTone()
             budgetText = minorToAmountText(existing.monthlyBudgetMinor)
             isImpulse = existing.isImpulse
+            kind = existing.kind
             initialized = true
         }
     }
@@ -160,7 +164,37 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 32.dp),
         ) {
-            SectionLabel(text = "Emoji", modifier = Modifier.padding(top = 16.dp))
+            if (!isEditMode) {
+                SectionLabel(text = "Rodzaj", modifier = Modifier.padding(top = 16.dp))
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Pill(
+                        text = "Wydatek",
+                        accent = Coral,
+                        filled = kind == CategoryKind.EXPENSE,
+                        modifier = Modifier.clickable { kind = CategoryKind.EXPENSE },
+                    )
+                    Pill(
+                        text = "Dochód",
+                        accent = Lime,
+                        filled = kind == CategoryKind.INCOME,
+                        modifier = Modifier.clickable { kind = CategoryKind.INCOME },
+                    )
+                }
+            } else {
+                SectionLabel(text = "Rodzaj", modifier = Modifier.padding(top = 16.dp))
+                Text(
+                    text = if (kind == CategoryKind.INCOME) "Dochód" else "Wydatek",
+                    color = if (kind == CategoryKind.INCOME) Lime else Coral,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+
+            SectionLabel(text = "Emoji", modifier = Modifier.padding(top = 24.dp))
             Box(
                 modifier = Modifier
                     .padding(top = 8.dp)
@@ -216,58 +250,61 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
                 }
             }
 
-            SectionLabel(text = "Miesięczny budżet", modifier = Modifier.padding(top = 24.dp))
-            OutlinedTextField(
-                value = budgetText,
-                onValueChange = { input ->
-                    if (input.count { it == ',' || it == '.' } <= 1) budgetText = input
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                placeholder = { Text("0,00", color = TextMuted) },
-                suffix = { Text("zł", color = Lime, fontSize = 14.sp) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                textStyle = TextStyle(fontSize = 16.sp, color = TextPrimary),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Lime,
-                    unfocusedBorderColor = Lime.copy(alpha = 0.4f),
-                    focusedContainerColor = Surface,
-                    unfocusedContainerColor = Surface,
-                ),
-            )
-
-            SurfaceCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-            ) {
-                Row(
+            // Miesięczny budżet i seria "impulsowa" mają sens tylko dla wydatków — dochodom się ich nie limituje.
+            if (kind == CategoryKind.EXPENSE) {
+                SectionLabel(text = "Miesięczny budżet", modifier = Modifier.padding(top = 24.dp))
+                OutlinedTextField(
+                    value = budgetText,
+                    onValueChange = { input ->
+                        if (input.count { it == ',' || it == '.' } <= 1) budgetText = input
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(top = 8.dp),
+                    placeholder = { Text("0,00", color = TextMuted) },
+                    suffix = { Text("zł", color = Lime, fontSize = 14.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    textStyle = TextStyle(fontSize = 16.sp, color = TextPrimary),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Lime,
+                        unfocusedBorderColor = Lime.copy(alpha = 0.4f),
+                        focusedContainerColor = Surface,
+                        unfocusedContainerColor = Surface,
+                    ),
+                )
+
+                SurfaceCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Kategoria impulsowa",
-                            color = TextPrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Text(
-                            text = "Wydatki w tej kategorii przerywają serię dni bez impulsu.",
-                            color = TextMuted,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(top = 2.dp),
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Kategoria impulsowa",
+                                color = TextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = "Wydatki w tej kategorii przerywają serię dni bez impulsu.",
+                                color = TextMuted,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                        Switch(
+                            checked = isImpulse,
+                            onCheckedChange = { isImpulse = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = Lime, checkedThumbColor = Surface),
                         )
                     }
-                    Switch(
-                        checked = isImpulse,
-                        onCheckedChange = { isImpulse = it },
-                        colors = SwitchDefaults.colors(checkedTrackColor = Lime, checkedThumbColor = Surface),
-                    )
                 }
             }
 
@@ -276,11 +313,12 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
                 modifier = Modifier.padding(top = 28.dp),
                 onClick = {
                     if (label.isNotBlank()) {
-                        val budgetMinor = parseAmountToMinor(budgetText)
+                        val budgetMinor = if (kind == CategoryKind.EXPENSE) parseAmountToMinor(budgetText) else 0L
                         val savedLabel = label.trim()
                         val savedEmoji = emoji
                         val savedTone = tone
-                        val savedImpulse = isImpulse
+                        val savedImpulse = kind == CategoryKind.EXPENSE && isImpulse
+                        val savedKind = kind
                         scope.launch {
                             viewModel.save(
                                 label = savedLabel,
@@ -288,6 +326,7 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
                                 colorToken = savedTone.name.lowercase(),
                                 monthlyBudgetMinor = budgetMinor,
                                 isImpulse = savedImpulse,
+                                kind = savedKind,
                             )
                             onDone()
                         }
@@ -351,8 +390,9 @@ fun CategoryFormScreen(categoryId: String? = null, onDone: () -> Unit) {
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(text = "Usunąć kategorię?", color = TextPrimary) },
             text = {
+                val fallbackLabel = if (kind == CategoryKind.INCOME) "Inne wpływy" else "Inne"
                 Text(
-                    text = "Dotychczasowe transakcje z tej kategorii zostaną przeniesione do kategorii \"Inne\".",
+                    text = "Dotychczasowe transakcje z tej kategorii zostaną przeniesione do kategorii \"$fallbackLabel\".",
                     color = TextMuted,
                 )
             },

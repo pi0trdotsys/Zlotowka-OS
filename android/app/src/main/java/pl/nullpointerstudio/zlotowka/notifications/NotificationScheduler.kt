@@ -8,10 +8,10 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 /**
- * Planowanie cyklicznych workerów powiadomień. Harmonogram jest "na sztywno" (21:00 / pon 9:00)
- * przy pierwszym zaplanowaniu — sam worker sprawdza w locie, czy użytkownik ma powiadomienia
- * włączone i o której godzinie faktycznie chce je widzieć (DataStore jest asynchroniczne,
- * więc nie da się tego odczytać synchronicznie w miejscu planowania).
+ * Planowanie cyklicznych workerów powiadomień. Harmonogram jest "na sztywno" (21:00 / pon 9:00 /
+ * 10:00 / 20:00 wieczorem) przy pierwszym zaplanowaniu — sam worker sprawdza w locie, czy
+ * użytkownik ma powiadomienia włączone i o której godzinie faktycznie chce je widzieć (DataStore
+ * jest asynchroniczne, więc nie da się tego odczytać synchronicznie w miejscu planowania).
  */
 object NotificationScheduler {
 
@@ -24,7 +24,9 @@ object NotificationScheduler {
     private const val DEFAULT_WEEKLY_DAY = Calendar.MONDAY
     private const val DEFAULT_WEEKLY_HOUR = 9
     private const val DEFAULT_MOTIVATION_HOUR = 10
-    private const val DEFAULT_LOGGING_REMINDER_HOUR = 15
+    // Wieczorem, ale wyraźnie przed podsumowaniem dnia (21:00) — żeby zdążyć dopisać wpis,
+    // zanim przyjdzie notka z bilansem dnia, który bez tego wpisu byłby niepełny.
+    private const val DEFAULT_LOGGING_REMINDER_HOUR = 20
 
     fun scheduleAll(context: Context) {
         val workManager = WorkManager.getInstance(context)
@@ -63,9 +65,11 @@ object NotificationScheduler {
         val loggingReminderRequest = PeriodicWorkRequestBuilder<LoggingReminderWorker>(24, TimeUnit.HOURS)
             .setInitialDelay(loggingReminderDelayMs, TimeUnit.MILLISECONDS)
             .build()
+        // UPDATE (nie KEEP) — ta godzina nie jest ustawialna przez użytkownika, więc zmiana
+        // DEFAULT_LOGGING_REMINDER_HOUR w kodzie ma się od razu przełożyć na już zainstalowane wersje.
         workManager.enqueueUniquePeriodicWork(
             LOGGING_REMINDER_WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP,
+            ExistingPeriodicWorkPolicy.UPDATE,
             loggingReminderRequest,
         )
     }

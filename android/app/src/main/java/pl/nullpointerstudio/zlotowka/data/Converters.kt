@@ -14,4 +14,10 @@ class Converters {
 
     @TypeConverter
     fun toContributionSource(value: String): ContributionSource = ContributionSource.valueOf(value)
+
+    @TypeConverter
+    fun fromCategoryKind(value: CategoryKind): String = value.name
+
+    @TypeConverter
+    fun toCategoryKind(value: String): CategoryKind = CategoryKind.valueOf(value)
 }

@@ -8,6 +8,9 @@ enum class PaymentMethod { BLIK, CARD, CASH, TRANSFER }
 
 enum class ContributionSource { MANUAL, AUTO, ROUNDUP, CHALLENGE, CUT }
 
+/** Kategorie wydatków i dochodów to osobne listy — sposoby zarabiania różnią się od sposobów wydawania. */
+enum class CategoryKind { EXPENSE, INCOME }
+
 /** Kwoty zawsze w groszach jako Long — nigdy Double. Wydatek < 0, dochód > 0. */
 @Entity(tableName = "transactions")
 data class TransactionEntity(
@@ -31,6 +34,8 @@ data class CategoryEntity(
     val sortOrder: Int = 0,
     /** kategorie "impulsowe" napędzają serię (streak) w Pulsie oszczędzania */
     val isImpulse: Boolean = false,
+    /** Wydatek czy dochód — osobne listy kategorii, bo sposoby zarabiania różnią się od wydawania. */
+    val kind: CategoryKind = CategoryKind.EXPENSE,
 )
 
 @Entity(tableName = "goals")

@@ -79,10 +79,18 @@ fun suggestionsForGoal(
             val spent = spentByCategory[c.id] ?: 0L
             val over = max(0L, spent - c.monthlyBudgetMinor)
             val cutMinor = if (over > 0) roundToNearest100(over) else roundToNearest100((spent * 0.15).toLong())
-            val weeksSaved = max(
-                1,
-                ((baseMonths - monthsToGoal(goal, cutMinor)) * 4.345).roundToInt(),
-            )
+            // baseMonths i/lub afterCutMonths mogą być Double.POSITIVE_INFINITY, gdy cel nie ma
+            // jeszcze ustawionego tempa odkładania (monthlyContribMinor == 0) — Infinity - Infinity
+            // daje NaN, a roundToInt() na NaN rzuca wyjątkiem, więc liczymy to bezpiecznie.
+            val afterCutMonths = monthsToGoal(goal, cutMinor)
+            val weeksSaved = when {
+                baseMonths.isFinite() && afterCutMonths.isFinite() ->
+                    max(1, ((baseMonths - afterCutMonths) * 4.345).roundToInt())
+                !baseMonths.isFinite() && afterCutMonths.isFinite() ->
+                    // Cel bez tempa nigdy by się nie domknął — to cięcie samo w sobie daje mu termin.
+                    max(1, (afterCutMonths * 4.345).roundToInt())
+                else -> 1
+            }
             CutSuggestion(
                 categoryId = c.id,
                 icon = c.emoji,

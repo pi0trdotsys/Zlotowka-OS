@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import pl.nullpointerstudio.zlotowka.data.BudgetRepository
 import pl.nullpointerstudio.zlotowka.data.CategoryEntity
+import pl.nullpointerstudio.zlotowka.data.CategoryKind
 import pl.nullpointerstudio.zlotowka.data.ContributionSource
 import pl.nullpointerstudio.zlotowka.data.GoalEntity
 import pl.nullpointerstudio.zlotowka.domain.CutSuggestion
@@ -40,19 +41,20 @@ class BudgetViewModel(private val repository: BudgetRepository) : ViewModel() {
         repository.goals,
         repository.motivationSnapshot,
     ) { categories, transactions, goals, snapshot ->
+        val expenseCategories = categories.filter { it.kind == CategoryKind.EXPENSE }
         val spentByCategory = currentMonthExpenseByCategory(transactions)
-        val withBudget = categories.filter { it.monthlyBudgetMinor > 0 }
+        val withBudget = expenseCategories.filter { it.monthlyBudgetMinor > 0 }
         val safeCount = withBudget.count { (spentByCategory[it.id] ?: 0L).toDouble() / it.monthlyBudgetMinor <= 0.75 }
         val overCount = withBudget.count { (spentByCategory[it.id] ?: 0L) > it.monthlyBudgetMinor }
         val mainGoal = goals.filter { it.priority > 0 }.minByOrNull { it.priority }
         val bestSuggestion = mainGoal?.let {
-            suggestionsForGoal(it, categories, spentByCategory, limit = 1).firstOrNull()
+            suggestionsForGoal(it, expenseCategories, spentByCategory, limit = 1).firstOrNull()
         }
         val monthTotals = currentMonthTotals(transactions)
         val daysLeft = max(1, monthTotals.daysInMonth - monthTotals.dayOfMonth + 1)
 
         BudgetUiState(
-            categories = categories.sortedBy { it.sortOrder },
+            categories = expenseCategories.sortedBy { it.sortOrder },
             spentByCategory = spentByCategory,
             snapshot = snapshot,
             safeCategoryCount = safeCount,
