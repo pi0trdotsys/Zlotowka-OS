@@ -121,40 +121,48 @@ export function FlowHistogram() {
 /* ---------- 1. PULPIT ---------- */
 export function ScreenDashboard() {
   return (
-
     <>
       <StatusBar title="Pulpit" />
       <div className="glow-top flex-1 overflow-hidden px-5 pt-4">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          Zostało do końca lipca
-        </p>
-        <div className="mt-1 flex items-end gap-2">
-          <span className="tabular text-[38px] font-semibold leading-none text-foreground">
-            2 148,53
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              Zostało do końca lipca
+            </p>
+            <div className="mt-1 flex items-end gap-2">
+              <span className="tabular text-[34px] font-semibold leading-none text-foreground">
+                2 148,53
+              </span>
+              <span className="pb-0.5 text-base text-lime">zł</span>
+            </div>
+          </div>
+          <span className="tabular rounded-full border border-lime/30 bg-lime/10 px-2 py-1 text-[10px] text-lime">
+            🔥 {streakDays} dni
           </span>
-          <span className="pb-1 text-lg text-lime">zł</span>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           To <span className="text-lime">71 zł/dzień</span> — o 12 zł więcej niż w czerwcu.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Puls oszczędzania
-            </span>
-            <span className="tabular text-sm text-lime">{savingScore}/100</span>
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Puls oszczędzania
+              </span>
+              <span className="tabular text-xs text-lime">{savingScore}/100</span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div className="h-full rounded-full bg-lime" style={{ width: `${savingScore}%` }} />
+            </div>
+            <p className="mt-1.5 text-[10px] leading-tight text-muted-foreground">
+              Jeszcze 3 dni do odznaki <span className="text-lime">„Twarda Waluta”</span>.
+            </p>
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-lime" style={{ width: `${savingScore}%` }} />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            🔥 {streakDays} dni bez wydatku impulsowego. Jeszcze 3 i odblokujesz odznakę
-            <span className="text-lime"> „Twarda Waluta”</span>.
-          </p>
         </div>
 
         <FlowHistogram />
+
 
         <div className="mt-4 space-y-2">
           {transactions.slice(0, 2).map((t) => {
