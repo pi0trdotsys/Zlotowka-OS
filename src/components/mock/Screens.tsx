@@ -3,7 +3,7 @@ import {
   contributionsFor,
   dailyFlow,
   dayBalanceMinor,
-  flowScaleMinor,
+  flowScales,
   goalEta,
   goalEtaFromHistory,
   goalPct,
@@ -25,44 +25,48 @@ import { StatusBar, TabBar } from "./PhoneFrame";
 
 /* ---------- HISTOGRAM PRZEPŁYWU: wydatki vs dochody ---------- */
 export function FlowHistogram() {
-  const scale = flowScaleMinor();
+  const { incomeMax, expenseMax } = flowScales();
   const totals = weekTotals();
-  const H = 62; // maks. wysokość słupka w px (w każdą stronę)
+  const H = 56; // maks. wysokość słupka w px (osobno w górę i w dół)
+  const worst = Math.max(...dailyFlow.map((d) => d.expenseMinor));
   return (
-    <div className="mt-5 rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            Przepływ 7 dni
-          </p>
-          <p className="tabular mt-1 text-sm">
-            <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
-            <span className="text-muted-foreground"> / </span>
-            <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1 text-[9px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <i className="h-1.5 w-3 rounded-full bg-lime" /> wpływy
-          </span>
-          <span className="flex items-center gap-1">
-            <i className="h-1.5 w-3 rounded-full bg-coral" /> wydatki
-          </span>
-        </div>
+    <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Przepływ
+        </p>
+        <p className="tabular whitespace-nowrap text-xs">
+          <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
+          <span className="text-muted-foreground"> · </span>
+          <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
+        </p>
+      </div>
+      <div className="mt-1 flex items-center gap-3 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <i className="h-1.5 w-2.5 rounded-full bg-lime" /> wpływy
+        </span>
+        <span className="flex items-center gap-1">
+          <i className="h-1.5 w-2.5 rounded-full bg-coral" /> wydatki
+        </span>
+        <span className="ml-auto">ostatnie 7 dni</span>
       </div>
 
-      <div className="mt-4 flex items-stretch gap-1.5">
+
+      <div className="mt-3 flex items-stretch gap-1.5">
         {dailyFlow.map((d) => {
-          const inH = Math.round((d.incomeMinor / scale) * H);
-          const outH = Math.round((d.expenseMinor / scale) * H);
+          const inH = Math.round((d.incomeMinor / incomeMax) * H);
+          const outH = Math.round((d.expenseMinor / expenseMax) * H);
+          const isWorst = d.expenseMinor === worst;
           return (
-            <div key={d.day} className="flex flex-1 flex-col items-center">
+            <div key={d.day} className="group flex flex-1 flex-col items-center">
               {/* wpływy — nad osią */}
-              <div className="flex h-[62px] w-full flex-col justify-end">
-                <div
-                  className={`w-full rounded-t-md ${d.incomeMinor > 0 ? "bg-lime" : "bg-transparent"}`}
-                  style={{ height: `${Math.max(d.incomeMinor > 0 ? 3 : 0, inH)}px` }}
-                />
+              <div className="flex h-[56px] w-full flex-col justify-end">
+                {d.incomeMinor > 0 && (
+                  <div
+                    className="w-full rounded-t-md bg-lime/90"
+                    style={{ height: `${Math.max(3, inH)}px` }}
+                  />
+                )}
               </div>
               {/* oś zera */}
               <div
@@ -70,14 +74,18 @@ export function FlowHistogram() {
                 aria-hidden
               />
               {/* wydatki — pod osią */}
-              <div className="h-[62px] w-full">
-                <div
-                  className={`w-full rounded-b-md ${d.expenseMinor > 0 ? "bg-coral" : "bg-transparent"}`}
-                  style={{ height: `${Math.max(d.expenseMinor > 0 ? 3 : 0, outH)}px` }}
-                />
+              <div className="h-[56px] w-full">
+                {d.expenseMinor > 0 && (
+                  <div
+                    className={`w-full rounded-b-md ${isWorst ? "bg-coral" : "bg-coral/55"}`}
+                    style={{ height: `${Math.max(3, outH)}px` }}
+                  />
+                )}
               </div>
               <span
-                className={`tabular mt-1.5 text-[9px] ${d.isToday ? "text-cyan" : "text-muted-foreground"}`}
+                className={`tabular mt-1.5 rounded-full px-1.5 text-[9px] ${
+                  d.isToday ? "bg-cyan/15 text-cyan" : "text-muted-foreground"
+                }`}
               >
                 {d.day}
               </span>
@@ -86,59 +94,75 @@ export function FlowHistogram() {
         })}
       </div>
 
-      <div className="tabular mt-3 flex items-center justify-between border-t border-border pt-3 text-[10px]">
-        <span className="text-muted-foreground">Bilans tygodnia</span>
-        <span className={totals.balanceMinor >= 0 ? "text-lime" : "text-coral"}>
-          {pln(totals.balanceMinor, { sign: true })}
-        </span>
+      <div className="tabular mt-3 grid grid-cols-2 gap-2 border-t border-border pt-3 text-[10px]">
+        <div className="rounded-lg bg-surface-2/60 px-2 py-1.5">
+          <p className="text-muted-foreground">Bilans tygodnia</p>
+          <p className={`mt-0.5 ${totals.balanceMinor >= 0 ? "text-lime" : "text-coral"}`}>
+            {pln(totals.balanceMinor, { sign: true })}
+          </p>
+        </div>
+        <div className="rounded-lg bg-surface-2/60 px-2 py-1.5">
+          <p className="text-muted-foreground">Dziś</p>
+          <p
+            className={`mt-0.5 ${dayBalanceMinor(dailyFlow[6]) >= 0 ? "text-lime" : "text-coral"}`}
+          >
+            {pln(dayBalanceMinor(dailyFlow[6]), { sign: true })}
+          </p>
+        </div>
       </div>
-      <div className="tabular mt-1 flex items-center justify-between text-[10px]">
-        <span className="text-muted-foreground">Dziś</span>
-        <span className={dayBalanceMinor(dailyFlow[6]) >= 0 ? "text-lime" : "text-coral"}>
-          {pln(dayBalanceMinor(dailyFlow[6]), { sign: true })}
-        </span>
-      </div>
+      <p className="mt-2 text-[9px] leading-tight text-muted-foreground">
+        Skale góra/dół są niezależne — dzień wypłaty nie spłaszcza wydatków.
+      </p>
     </div>
   );
 }
 
+
 /* ---------- 1. PULPIT ---------- */
 export function ScreenDashboard() {
   return (
-
     <>
       <StatusBar title="Pulpit" />
       <div className="glow-top flex-1 overflow-hidden px-5 pt-4">
-        <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-          Zostało do końca lipca
-        </p>
-        <div className="mt-1 flex items-end gap-2">
-          <span className="tabular text-[38px] font-semibold leading-none text-foreground">
-            2 148,53
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
+              Zostało do końca lipca
+            </p>
+            <div className="mt-1 flex items-end gap-2">
+              <span className="tabular text-[34px] font-semibold leading-none text-foreground">
+                2 148,53
+              </span>
+              <span className="pb-0.5 text-base text-lime">zł</span>
+            </div>
+          </div>
+          <span className="tabular rounded-full border border-lime/30 bg-lime/10 px-2 py-1 text-[10px] text-lime">
+            🔥 {streakDays} dni
           </span>
-          <span className="pb-1 text-lg text-lime">zł</span>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
           To <span className="text-lime">71 zł/dzień</span> — o 12 zł więcej niż w czerwcu.
         </p>
 
-        <div className="mt-5 rounded-2xl border border-border bg-surface p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Puls oszczędzania
-            </span>
-            <span className="tabular text-sm text-lime">{savingScore}/100</span>
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Puls oszczędzania
+              </span>
+              <span className="tabular text-xs text-lime">{savingScore}/100</span>
+            </div>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div className="h-full rounded-full bg-lime" style={{ width: `${savingScore}%` }} />
+            </div>
+            <p className="mt-1.5 text-[10px] leading-tight text-muted-foreground">
+              Jeszcze 3 dni do odznaki <span className="text-lime">„Twarda Waluta”</span>.
+            </p>
           </div>
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-            <div className="h-full rounded-full bg-lime" style={{ width: `${savingScore}%` }} />
-          </div>
-          <p className="mt-3 text-xs text-muted-foreground">
-            🔥 {streakDays} dni bez wydatku impulsowego. Jeszcze 3 i odblokujesz odznakę
-            <span className="text-lime"> „Twarda Waluta”</span>.
-          </p>
         </div>
 
         <FlowHistogram />
+
 
         <div className="mt-4 space-y-2">
           {transactions.slice(0, 2).map((t) => {
