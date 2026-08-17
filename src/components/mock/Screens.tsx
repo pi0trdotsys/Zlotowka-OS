@@ -31,26 +31,25 @@ export function FlowHistogram() {
   const worst = Math.max(...dailyFlow.map((d) => d.expenseMinor));
   return (
     <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-            Przepływ 7 dni
-          </p>
-          <p className="tabular mt-1 whitespace-nowrap text-xs">
-            <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
-            <span className="text-muted-foreground"> · </span>
-            <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <i className="h-1.5 w-2.5 rounded-full bg-lime" /> wpływy
-          </span>
-          <span className="flex items-center gap-1">
-            <i className="h-1.5 w-2.5 rounded-full bg-coral" /> wydatki
-          </span>
-        </div>
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Przepływ 7 dni
+        </p>
+        <p className="tabular whitespace-nowrap text-xs">
+          <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
+          <span className="text-muted-foreground"> · </span>
+          <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
+        </p>
       </div>
+      <div className="mt-1 flex items-center gap-3 text-[9px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <i className="h-1.5 w-2.5 rounded-full bg-lime" /> wpływy
+        </span>
+        <span className="flex items-center gap-1">
+          <i className="h-1.5 w-2.5 rounded-full bg-coral" /> wydatki
+        </span>
+      </div>
+
 
       <div className="mt-3 flex items-stretch gap-1.5">
         {dailyFlow.map((d) => {
