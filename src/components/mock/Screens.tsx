@@ -32,8 +32,8 @@ export function FlowHistogram() {
   return (
     <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-          Przepływ 7 dni
+        <p className="whitespace-nowrap text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+          Przepływ
         </p>
         <p className="tabular whitespace-nowrap text-xs">
           <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
@@ -48,6 +48,7 @@ export function FlowHistogram() {
         <span className="flex items-center gap-1">
           <i className="h-1.5 w-2.5 rounded-full bg-coral" /> wydatki
         </span>
+        <span className="ml-auto">ostatnie 7 dni</span>
       </div>
 
 
