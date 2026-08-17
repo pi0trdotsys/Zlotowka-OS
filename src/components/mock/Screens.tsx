@@ -3,7 +3,7 @@ import {
   contributionsFor,
   dailyFlow,
   dayBalanceMinor,
-  flowScaleMinor,
+  flowScales,
   goalEta,
   goalEtaFromHistory,
   goalPct,
