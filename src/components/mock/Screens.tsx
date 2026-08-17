@@ -1,6 +1,9 @@
 import {
   categories,
   contributionsFor,
+  dailyFlow,
+  dayBalanceMinor,
+  flowScaleMinor,
   goalEta,
   goalEtaFromHistory,
   goalPct,
@@ -8,6 +11,7 @@ import {
   milestonesFor,
   monthlyContribSeries,
   pln,
+  plnShort,
   quickTopUps,
   savingScore,
   streakDays,
@@ -15,14 +19,93 @@ import {
   toneBg,
   toneClass,
   transactions,
-  weeklySpend,
+  weekTotals,
 } from "@/data/mock";
 import { StatusBar, TabBar } from "./PhoneFrame";
 
+/* ---------- HISTOGRAM PRZEPŁYWU: wydatki vs dochody ---------- */
+export function FlowHistogram() {
+  const scale = flowScaleMinor();
+  const totals = weekTotals();
+  const H = 62; // maks. wysokość słupka w px (w każdą stronę)
+  return (
+    <div className="mt-5 rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+            Przepływ 7 dni
+          </p>
+          <p className="tabular mt-1 text-sm">
+            <span className="text-lime">+{plnShort(totals.incomeMinor)}</span>
+            <span className="text-muted-foreground"> / </span>
+            <span className="text-coral">−{plnShort(totals.expenseMinor)}</span>
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1 text-[9px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <i className="h-1.5 w-3 rounded-full bg-lime" /> wpływy
+          </span>
+          <span className="flex items-center gap-1">
+            <i className="h-1.5 w-3 rounded-full bg-coral" /> wydatki
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-stretch gap-1.5">
+        {dailyFlow.map((d) => {
+          const inH = Math.round((d.incomeMinor / scale) * H);
+          const outH = Math.round((d.expenseMinor / scale) * H);
+          return (
+            <div key={d.day} className="flex flex-1 flex-col items-center">
+              {/* wpływy — nad osią */}
+              <div className="flex h-[62px] w-full flex-col justify-end">
+                <div
+                  className={`w-full rounded-t-md ${d.incomeMinor > 0 ? "bg-lime" : "bg-transparent"}`}
+                  style={{ height: `${Math.max(d.incomeMinor > 0 ? 3 : 0, inH)}px` }}
+                />
+              </div>
+              {/* oś zera */}
+              <div
+                className={`h-px w-full ${d.isToday ? "bg-cyan" : "bg-border"}`}
+                aria-hidden
+              />
+              {/* wydatki — pod osią */}
+              <div className="h-[62px] w-full">
+                <div
+                  className={`w-full rounded-b-md ${d.expenseMinor > 0 ? "bg-coral" : "bg-transparent"}`}
+                  style={{ height: `${Math.max(d.expenseMinor > 0 ? 3 : 0, outH)}px` }}
+                />
+              </div>
+              <span
+                className={`tabular mt-1.5 text-[9px] ${d.isToday ? "text-cyan" : "text-muted-foreground"}`}
+              >
+                {d.day}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="tabular mt-3 flex items-center justify-between border-t border-border pt-3 text-[10px]">
+        <span className="text-muted-foreground">Bilans tygodnia</span>
+        <span className={totals.balanceMinor >= 0 ? "text-lime" : "text-coral"}>
+          {pln(totals.balanceMinor, { sign: true })}
+        </span>
+      </div>
+      <div className="tabular mt-1 flex items-center justify-between text-[10px]">
+        <span className="text-muted-foreground">Dziś</span>
+        <span className={dayBalanceMinor(dailyFlow[6]) >= 0 ? "text-lime" : "text-coral"}>
+          {pln(dayBalanceMinor(dailyFlow[6]), { sign: true })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /* ---------- 1. PULPIT ---------- */
 export function ScreenDashboard() {
-  const max = Math.max(...weeklySpend.map((d) => d.value));
   return (
+
     <>
       <StatusBar title="Pulpit" />
       <div className="glow-top flex-1 overflow-hidden px-5 pt-4">
@@ -55,20 +138,10 @@ export function ScreenDashboard() {
           </p>
         </div>
 
-        <div className="mt-5 flex h-24 items-end gap-2">
-          {weeklySpend.map((d) => (
-            <div key={d.day} className="flex flex-1 flex-col items-center gap-1.5">
-              <div
-                className={`w-full rounded-t-md ${d.value === max ? "bg-coral" : "bg-surface-2"}`}
-                style={{ height: `${(d.value / max) * 70}px` }}
-              />
-              <span className="tabular text-[9px] text-muted-foreground">{d.day}</span>
-            </div>
-          ))}
-        </div>
+        <FlowHistogram />
 
         <div className="mt-4 space-y-2">
-          {transactions.slice(0, 3).map((t) => {
+          {transactions.slice(0, 2).map((t) => {
             const cat = categories.find((c) => c.id === t.category);
             return (
               <div
@@ -89,6 +162,7 @@ export function ScreenDashboard() {
             );
           })}
         </div>
+
       </div>
       <TabBar active="home" />
     </>

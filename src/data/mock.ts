@@ -95,6 +95,53 @@ export const weeklySpend = [
   { day: "Nd", value: 6100 },
 ];
 
+/* ---------- PRZEPŁYW DZIENNY: wydatki vs dochody ---------- */
+
+export interface DayFlow {
+  day: string;
+  /** grosze wydane danego dnia (wartość dodatnia) */
+  expenseMinor: number;
+  /** grosze, które wpłynęły danego dnia */
+  incomeMinor: number;
+  isToday?: boolean;
+}
+
+/** 7 ostatnich dni — podstawa histogramu na Pulpicie. */
+export const dailyFlow: DayFlow[] = [
+  { day: "Pn", expenseMinor: 4200, incomeMinor: 0 },
+  { day: "Wt", expenseMinor: 11800, incomeMinor: 0 },
+  { day: "Śr", expenseMinor: 2600, incomeMinor: 15000 },
+  { day: "Cz", expenseMinor: 8900, incomeMinor: 0 },
+  { day: "Pt", expenseMinor: 15400, incomeMinor: 812000 },
+  { day: "So", expenseMinor: 23700, incomeMinor: 4000 },
+  { day: "Nd", expenseMinor: 6100, incomeMinor: 0, isToday: true },
+];
+
+export function dayBalanceMinor(d: DayFlow): number {
+  return d.incomeMinor - d.expenseMinor;
+}
+
+/** Największa wartość (wydatek lub dochód) — skala osi histogramu. */
+export function flowScaleMinor(days: DayFlow[] = dailyFlow): number {
+  return Math.max(1, ...days.flatMap((d) => [d.expenseMinor, d.incomeMinor]));
+}
+
+export const todayFlow: DayFlow = dailyFlow[dailyFlow.length - 1];
+
+export function weekTotals(days: DayFlow[] = dailyFlow) {
+  const expenseMinor = days.reduce((s, d) => s + d.expenseMinor, 0);
+  const incomeMinor = days.reduce((s, d) => s + d.incomeMinor, 0);
+  return { expenseMinor, incomeMinor, balanceMinor: incomeMinor - expenseMinor };
+}
+
+/** Krótki format kwoty do widgetów 2x1: „1,2 tys.” / „42,10”. */
+export function plnShort(minor: number): string {
+  const v = Math.abs(minor) / 100;
+  if (v >= 1000) return `${(v / 1000).toFixed(1).replace(".", ",")} tys.`;
+  return v.toFixed(2).replace(".", ",");
+}
+
+
 /** Formatowanie PLN: 1 234,56 zł — zgodne z pl-PL. */
 export function pln(minor: number, opts?: { sign?: boolean }): string {
   const value = minor / 100;

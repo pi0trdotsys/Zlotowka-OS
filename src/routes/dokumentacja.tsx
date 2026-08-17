@@ -222,36 +222,102 @@ fun actualMonthlyRate(items: List<ContributionEntity>, months: Int = 2): Long =
       </Section>
 
 
-      <Section n="06" title="Widget (Glance)">
-        <Code>{`class BudgetWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(
-        setOf(DpSize(180.dp, 110.dp),  // 2x2 "Puls"
-              DpSize(330.dp, 110.dp))  // 4x2 "Pasek dnia"
-    )
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = repository.widgetState()   // dailyLeftMinor, progress, streak, score
-        provideContent { WidgetContent(state) }
-    }
-}
-
-// Odświeżanie: WorkManager co 30 min + natychmiast po zapisie transakcji
-BudgetWidget().updateAll(context)
-
-// Akcje: actionStartActivity<MainActivity>(intent z "route" = "add")
-// Kwoty szybkie 10/20/50 zł -> actionRunCallback<QuickAddAction>()`}</Code>
+      <Section n="06" title="Histogram dzienny: wydatki vs dochody (Pulpit)">
         <p>
-          Tło widgetu: <code className="text-cyan">Surface</code> z 90% alfa + zaokrąglenie 28.dp
-          (użyj <code className="text-cyan">android:widgetBackground</code> i dynamicznego koloru
-          jako opcji).
+          Główny element Pulpitu — zajmuje pełną szerokość i ok. 1/3 wysokości ekranu. Słupki
+          dwukierunkowe: wpływy nad osią (limonka), wydatki pod osią (koral), oś zera dla dnia
+          bieżącego w cyjanie. Skala wspólna dla obu kierunków = maks. wartość w oknie.
+        </p>
+        <Code>{`// domain/DailyFlow.kt
+data class DayFlow(
+    val dayStart: Long,      // epoch ms, początek dnia (lokalna strefa)
+    val label: String,       // "Pn".."Nd"
+    val expenseMinor: Long,  // suma |amountMinor| dla amountMinor < 0
+    val incomeMinor: Long,   // suma amountMinor dla amountMinor > 0
+    val isToday: Boolean,
+) { val balanceMinor: Long get() = incomeMinor - expenseMinor }
+
+// Room: jedno zapytanie zamiast filtrowania w pamięci
+@Query("""
+  SELECT (timestamp / 86400000) AS dayKey,
+         SUM(CASE WHEN amountMinor < 0 THEN -amountMinor ELSE 0 END) AS expenseMinor,
+         SUM(CASE WHEN amountMinor > 0 THEN  amountMinor ELSE 0 END) AS incomeMinor
+  FROM transactions
+  WHERE timestamp >= :from AND timestamp < :to
+  GROUP BY dayKey ORDER BY dayKey
+""")
+fun dailyFlow(from: Long, to: Long): Flow<List<DayFlowRow>>
+// UWAGA: dayKey z dzielenia działa tylko dla UTC. Dla stref z DST licz granice dni
+// w Kotlinie (Calendar/LocalDate) i mapuj wiersze na pełne 7 dni — braki uzupełnij zerami.
+
+// Skala i wysokości słupków
+val scale = max(1L, days.flatMap { listOf(it.expenseMinor, it.incomeMinor) }.max())
+fun barHeight(v: Long, maxDp: Dp) = maxDp * (v.toFloat() / scale)   // maxDp = 62.dp
+// wartość > 0 rysuj minimum 3.dp, żeby drobne kwoty były widoczne
+
+// Zakresy okna: 7 dni (domyślnie), 14 dni, 30 dni — chip nad wykresem.
+// Podpis pod wykresem: bilans tygodnia = sum(income) - sum(expense),
+// kolor limonka gdy >= 0, koral gdy < 0.`}</Code>
+        <p>
+          W Compose rysuj słupki jako <code className="text-cyan">Box</code> w{" "}
+          <code className="text-cyan">Column</code> (górna sekcja z{" "}
+          <code className="text-cyan">Arrangement.Bottom</code>, dolna z{" "}
+          <code className="text-cyan">Arrangement.Top</code>) albo jednym{" "}
+          <code className="text-cyan">Canvas</code>. Tap na dniu → bottom sheet z listą transakcji
+          tego dnia; long-press → porównanie z tym samym dniem poprzedniego tygodnia.
         </p>
       </Section>
 
-      <Section n="07" title="Mapowanie plików makiety">
-        <Code>{`src/data/mock.ts                  -> kontrakt danych (encje, formatowanie)
-src/components/mock/Screens.tsx   -> 4 ekrany Compose
-src/components/mock/Widget.tsx    -> layouty Glance 4x2 i 2x2
-src/styles.css                    -> tokeny -> Color.kt / Type.kt / Shape.kt`}</Code>
+      <Section n="07" title="Widget (Glance) — rozmiary 2x1, 2x2, 4x2">
+        <Code>{`class BudgetWidget : GlanceAppWidget() {
+    override val sizeMode = SizeMode.Responsive(
+        setOf(
+            DpSize(160.dp, 50.dp),   // 2x1 — pasek jednowierszowy
+            DpSize(180.dp, 110.dp),  // 2x2 "Puls"
+            DpSize(330.dp, 50.dp),   // 4x1 — bilans + mikro-histogram
+            DpSize(330.dp, 110.dp),  // 4x2 "Pasek dnia" z histogramem 7 dni
+        )
+    )
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val state = repository.widgetState()  // todayIncome/Expense, dailyLeft, days7, streak, score
+        provideContent { WidgetContent(LocalSize.current, state) }
+    }
+}
+
+// --- warianty 2x1 (wybór przez konfigurację widgetu: WidgetStyle w DataStore) ---
+// A "Bilans dnia": +wpływy / -wydatki po prawej, wynik dnia dużą czcionką (limonka/koral)
+// B "Zostało dziś": kwota + pasek limitu (dailyLeftMinor / dailyBudgetMinor)
+// C "Puls 7 dni": mikro-histogram dwukierunkowy (14.dp w każdą stronę) + bilans tygodnia
+// D "Szybkie dodanie": FAB + kwoty 10/20/50 zł (actionRunCallback<QuickAddAction>())
+
+// Typografia 2x1: label 9sp / 0.2em spacing, kwota 16-18sp bold, monospace dla cyfr.
+// Padding 12.dp, róg 20.dp, tło Surface 90% alfa. Nie pokazuj więcej niż 3 liczb.
+
+// Odświeżanie: WorkManager co 30 min + natychmiast po zapisie transakcji
+BudgetWidget().updateAll(context)`}</Code>
+        <p>
+          W <code className="text-cyan">budget_widget_info.xml</code> ustaw{" "}
+          <code className="text-cyan">minWidth=110dp</code>,{" "}
+          <code className="text-cyan">minHeight=40dp</code>,{" "}
+          <code className="text-cyan">targetCellWidth=2</code>,{" "}
+          <code className="text-cyan">targetCellHeight=1</code> i{" "}
+          <code className="text-cyan">resizeMode=horizontal|vertical</code>, aby 2×1 był domyślnym
+          rozmiarem przy dodawaniu.
+        </p>
       </Section>
+
+      <Section n="08" title="Mapowanie plików makiety">
+        <Code>{`src/data/mock.ts                  -> kontrakt danych (encje, formatowanie, dailyFlow)
+src/components/mock/Screens.tsx   -> ekrany Compose + FlowHistogram (Pulpit)
+src/components/mock/Widget.tsx    -> layouty Glance 2x1 (A-D), 2x2 i 4x2
+src/styles.css                    -> tokeny -> Color.kt / Type.kt / Shape.kt
+
+// Odpowiedniki w repo Android:
+domain/Comparisons.kt  -> weeklyFlowSeries(), sumExpense(), sumIncome()
+widget/WidgetContent.kt -> warianty rozmiarów widgetu
+ui/screens/dashboard/  -> DashboardScreen + DashboardViewModel (Flow z dailyFlow)`}</Code>
+      </Section>
+
     </main>
   );
 }
