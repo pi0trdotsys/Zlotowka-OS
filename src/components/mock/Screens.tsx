@@ -55,20 +55,10 @@ export function ScreenDashboard() {
           </p>
         </div>
 
-        <div className="mt-5 flex h-24 items-end gap-2">
-          {weeklySpend.map((d) => (
-            <div key={d.day} className="flex flex-1 flex-col items-center gap-1.5">
-              <div
-                className={`w-full rounded-t-md ${d.value === max ? "bg-coral" : "bg-surface-2"}`}
-                style={{ height: `${(d.value / max) * 70}px` }}
-              />
-              <span className="tabular text-[9px] text-muted-foreground">{d.day}</span>
-            </div>
-          ))}
-        </div>
+        <FlowHistogram />
 
         <div className="mt-4 space-y-2">
-          {transactions.slice(0, 3).map((t) => {
+          {transactions.slice(0, 2).map((t) => {
             const cat = categories.find((c) => c.id === t.category);
             return (
               <div
@@ -89,6 +79,7 @@ export function ScreenDashboard() {
             );
           })}
         </div>
+
       </div>
       <TabBar active="home" />
     </>
