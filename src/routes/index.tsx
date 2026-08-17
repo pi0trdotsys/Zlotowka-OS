@@ -112,13 +112,18 @@ function Index() {
             </p>
             <ul className="mt-6 space-y-3 text-sm text-muted-foreground">
               <li>
-                <span className="text-lime">4×2</span> — „Pasek dnia”: pozostały dzienny limit,
-                pasek postępu, seria dni bez impulsu, przycisk szybkiego dodania.
+                <span className="text-lime">2×1</span> — cztery warianty paska: „Bilans dnia”
+                (wpłynęło vs wydane), „Zostało dziś”, mikro-histogram 7 dni i szybkie dodanie.
+              </li>
+              <li>
+                <span className="text-lime">4×2</span> — „Pasek dnia”: dzienny limit, histogram
+                wpływów i wydatków z 7 dni, seria dni bez impulsu, szybkie dodanie.
               </li>
               <li>
                 <span className="text-lime">2×2</span> — „Puls”: wynik oszczędzania 0–100 i trzy
                 skróty kwot (10 / 20 / 50 zł).
               </li>
+
               <li>
                 Aktualizacja przez <code className="text-cyan">GlanceAppWidget</code> +{" "}
                 <code className="text-cyan">WorkManager</code>, dane z Room przez repozytorium.
