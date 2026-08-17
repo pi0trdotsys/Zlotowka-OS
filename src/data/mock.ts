@@ -126,6 +126,18 @@ export function flowScaleMinor(days: DayFlow[] = dailyFlow): number {
   return Math.max(1, ...days.flatMap((d) => [d.expenseMinor, d.incomeMinor]));
 }
 
+/**
+ * Osobne skale dla wpływów i wydatków. Jedna wypłata (8 000 zł) spłaszczyłaby
+ * wszystkie wydatki do niewidocznych kresek — dlatego każda połowa osi ma własne maksimum.
+ */
+export function flowScales(days: DayFlow[] = dailyFlow) {
+  return {
+    incomeMax: Math.max(1, ...days.map((d) => d.incomeMinor)),
+    expenseMax: Math.max(1, ...days.map((d) => d.expenseMinor)),
+  };
+}
+
+
 export const todayFlow: DayFlow = dailyFlow[dailyFlow.length - 1];
 
 export function weekTotals(days: DayFlow[] = dailyFlow) {
